@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Export Poster</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+  <style>
+    body {
+      background: #1a1a1a;
+      margin: 0;
+      padding: 20px;
+      font-family: sans-serif;
+      color: white;
+    }
+    .info {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background: rgba(0,0,0,0.8);
+      padding: 15px;
+      border-radius: 8px;
+      z-index: 100;
+    }
+    kbd {
+      background: #333;
+      padding: 2px 8px;
+      border-radius: 4px;
+      border: 1px solid #555;
+    }
+  </style>
+</head>
+<body>
+  <div class="info">
+    <h3>Poster Export Utility</h3>
+    <p><kbd>S</kbd> - Save full poster as PNG</p>
+    <p><kbd>E</kbd> - Export individual elements for edge tracing</p>
+    <p>Auto-saves after 1 second.</p>
+  </div>
+  <script src="export-poster.js"></script>
+</body>
+</html>
