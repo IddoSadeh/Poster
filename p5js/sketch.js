@@ -50,6 +50,11 @@ const TIMELINE = {
   phase4Start: 17.8,    // after phase 3 completes
   dotsGrow: 3.4,        // dots grow to final size
 
+  // Phase 5: Brownian motion and blob formation
+  phase5Start: 21.2,    // after phase 4 completes
+  textFadeOut: 1.0,     // fade out original text
+  blobForm: 10.0,       // dots slowly move to blob positions
+
   // End
   holdFinal: 5.0
 };
@@ -76,6 +81,13 @@ const FILL_DOT_RADIUS = 3;
 // Phase 4: Dot growth
 const DOT_GROW_2026 = 8;  // 2026 dots grow 8x
 const DOT_GROW_OTHER = 4;  // Other dots grow 4x
+
+// Phase 5: Brownian motion
+const BLOB_COUNT = 5;  // Number of blobs for 2026 dots
+const BLOB_ATTRACTION = 0.04;  // How strongly dots are pulled to blobs (slower)
+const BROWNIAN_FORCE = 0.2;  // Random force strength for 2026 dots
+const DAMPING = 0.93;  // Velocity damping (friction)
+const OTHER_DOT_DRIFT = 0.25;  // Gentle Brownian motion for other dots
 
 // Edge detection thresholds
 const EDGE_THRESHOLDS = {
@@ -114,6 +126,10 @@ let fillDots = {
 // Phase 4: Dot scaling
 let dotScale2026 = 1;  // Scale for 2026 dots
 let dotScaleOther = 1;  // Scale for other dots
+
+// Phase 5: Brownian motion and poster opacity
+let posterOpacity = 1;  // Opacity of original poster elements
+let blobCenters = [];  // Positions of the 5 blobs for 2026 dots
 
 // All edge points (100%) for sampling
 let allEdges = {
@@ -157,7 +173,8 @@ function setup() {
   initPhase1();
   initPhase2();
   initPhase3();
-  
+  initPhase5();
+
   systemReady = true;
   console.log("✅ Animation system ready");
 }
@@ -344,6 +361,50 @@ function sampleEdges(edges, spacing) {
   return sampled;
 }
 
+// ===== PHASE 5: BROWNIAN MOTION INITIALIZATION =====
+
+function initPhase5() {
+  console.log("Initializing Phase 5: Brownian motion and blob formation");
+
+  // Create 5 blob centers spread across the entire canvas in a pattern
+  // This ensures they're well-distributed and far apart
+  blobCenters = [
+    { x: BASE_W * 0.15, y: BASE_H * 0.15 },  // Top left
+    { x: BASE_W * 0.85, y: BASE_H * 0.2 },   // Top right
+    { x: BASE_W * 0.5, y: BASE_H * 0.5 },    // Center
+    { x: BASE_W * 0.2, y: BASE_H * 0.8 },    // Bottom left
+    { x: BASE_W * 0.8, y: BASE_H * 0.85 }    // Bottom right
+  ];
+
+  // Add some randomness to avoid perfect grid
+  blobCenters.forEach(blob => {
+    blob.x += random(-BASE_W * 0.1, BASE_W * 0.1);
+    blob.y += random(-BASE_H * 0.1, BASE_H * 0.1);
+    blob.x = constrain(blob.x, BASE_W * 0.05, BASE_W * 0.95);
+    blob.y = constrain(blob.y, BASE_H * 0.05, BASE_H * 0.95);
+  });
+
+  // Add physics properties to tangent dots
+  tangentDots.forEach(dot => {
+    dot.vx = 0;
+    dot.vy = 0;
+    dot.targetBlob = floor(random(BLOB_COUNT));  // Assign to random blob
+  });
+
+  // Add physics properties to fill dots
+  for (const elementName of Object.keys(fillDots)) {
+    fillDots[elementName].forEach(dot => {
+      dot.vx = 0;
+      dot.vy = 0;
+      if (elementName === 'numbers2026') {
+        dot.targetBlob = floor(random(BLOB_COUNT));  // Assign to random blob
+      }
+    });
+  }
+
+  console.log(`  Created ${BLOB_COUNT} blob centers for 2026 dots`);
+}
+
 // ===== MAIN DRAW LOOP =====
 
 function draw() {
@@ -356,6 +417,7 @@ function draw() {
   updatePhase2(t);
   updatePhase3(t);
   updatePhase4(t);
+  updatePhase5(t);
 
   // Render
   renderScene(t);
@@ -519,26 +581,177 @@ function updatePhase4(t) {
   dotScaleOther = DOT_GROW_OTHER;
 }
 
+// ===== PHASE 5 UPDATE =====
+
+function updatePhase5(t) {
+  const p5 = TIMELINE.phase5Start;
+  const fadeEnd = p5 + TIMELINE.textFadeOut;
+  const blobEnd = fadeEnd + TIMELINE.blobForm;
+
+  // Before phase 5
+  if (t < p5) {
+    posterOpacity = 1;
+    return;
+  }
+
+  // Fade out original text
+  if (t < fadeEnd) {
+    const progress = (t - p5) / TIMELINE.textFadeOut;
+    posterOpacity = 1 - easeInOutCubic(progress);
+  } else {
+    posterOpacity = 0;
+  }
+
+  // Apply Brownian motion and blob formation
+  if (t >= p5) {
+    const motionProgress = t >= fadeEnd ?
+      Math.min(1, (t - fadeEnd) / TIMELINE.blobForm) : 0;
+
+    // Update tangent dots (2026 dots - move to blobs)
+    tangentDots.forEach(dot => {
+      updateDotPhysics2026(dot, motionProgress);
+    });
+
+    // Update fill dots
+    for (const elementName of Object.keys(fillDots)) {
+      fillDots[elementName].forEach(dot => {
+        if (elementName === 'numbers2026') {
+          updateDotPhysics2026(dot, motionProgress);
+        } else {
+          updateDotPhysicsOther(dot);
+        }
+      });
+    }
+  }
+}
+
+function updateDotPhysics2026(dot, blobProgress) {
+  // Get target blob center
+  const blob = blobCenters[dot.targetBlob];
+
+  // Calculate direction to blob
+  const dx = blob.x - dot.x;
+  const dy = blob.y - dot.y;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+
+  // Apply attraction force toward blob (increases over time)
+  if (dist > 1) {
+    const attraction = BLOB_ATTRACTION * blobProgress;
+    dot.vx += (dx / dist) * attraction;
+    dot.vy += (dy / dist) * attraction;
+  }
+
+  // Add Brownian motion (random force)
+  dot.vx += (random() - 0.5) * BROWNIAN_FORCE;
+  dot.vy += (random() - 0.5) * BROWNIAN_FORCE;
+
+  // Apply damping (friction)
+  dot.vx *= DAMPING;
+  dot.vy *= DAMPING;
+
+  // Update position
+  dot.x += dot.vx;
+  dot.y += dot.vy;
+
+  // Bounce off edges (more natural than hard constraining)
+  if (dot.x < 0 || dot.x > BASE_W) {
+    dot.vx *= -0.5;
+    dot.x = constrain(dot.x, 0, BASE_W);
+  }
+  if (dot.y < 0 || dot.y > BASE_H) {
+    dot.vy *= -0.5;
+    dot.y = constrain(dot.y, 0, BASE_H);
+  }
+}
+
+function updateDotPhysicsOther(dot) {
+  // Stronger Brownian motion for other dots - free floating
+  dot.vx += (random() - 0.5) * OTHER_DOT_DRIFT;
+  dot.vy += (random() - 0.5) * OTHER_DOT_DRIFT;
+
+  // Apply damping (lighter damping for more freedom)
+  dot.vx *= 0.98;
+  dot.vy *= 0.98;
+
+  // Update position
+  dot.x += dot.vx;
+  dot.y += dot.vy;
+
+  // Bounce off edges instead of constraining (more natural Brownian motion)
+  if (dot.x < 0 || dot.x > BASE_W) {
+    dot.vx *= -0.8;
+    dot.x = constrain(dot.x, 0, BASE_W);
+  }
+  if (dot.y < 0 || dot.y > BASE_H) {
+    dot.vy *= -0.8;
+    dot.y = constrain(dot.y, 0, BASE_H);
+  }
+}
+
 // ===== RENDER =====
 
 function renderScene(t) {
   drawingContext.globalCompositeOperation = "source-over";
   drawingContext.filter = "none";
-  
-  // Draw base poster
+
+  // Draw base poster (empty background)
   image(posterLayer, 0, 0);
 
-  // Always draw Times/Language dynamically with current scale
-  const cx = (items.times.x + items.lang.x + items.lang.w) / 2;
-  const cy = items.times.y + ((items.lang.y + items.lang.h) - items.times.y) / 2;
+  // Draw all poster elements dynamically with posterOpacity
+  if (posterOpacity > 0) {
+    push();
+    tint(255, posterOpacity * 255);
 
-  push();
-  translate(cx, cy);
-  scale(textScale);
-  translate(-cx, -cy);
-  image(timesImg, items.times.x, items.times.y, items.times.w, items.times.h);
-  image(langImg, items.lang.x, items.lang.y, items.lang.w, items.lang.h);
-  pop();
+    // Draw 2026 with glow
+    push();
+    tint(255, NUM_BASE_ALPHA * posterOpacity);
+    image(numbersImg, 0, 0, BASE_W, BASE_H);
+    pop();
+
+    push();
+    tint(255, GLOW_ALPHA * posterOpacity);
+    image(glowLayer, 0, 0, BASE_W, BASE_H);
+    pop();
+
+    // Draw other elements
+    image(topSVG, items.top.x, items.top.y, items.top.w, items.top.h);
+    image(addrSVG, items.addr.x, items.addr.y, items.addr.w, items.addr.h);
+    image(botLSVG, items.botL.x, items.botL.y, items.botL.w, items.botL.h);
+
+    pop();
+
+    // Draw clipped sections (using drawingContext clip directly)
+    push();
+    tint(255, posterOpacity * 255);
+    drawingContext.save();
+    drawingContext.beginPath();
+    drawingContext.rect(0, CUT.yMin, BASE_W, CUT.yMax - CUT.yMin);
+    drawingContext.clip();
+
+    tint(255, posterOpacity * 255);
+    image(coverLayer, 0, 0, BASE_W, BASE_H);
+
+    tint(255, OVERLAY_NUM_ALPHA * posterOpacity);
+    image(numbersImg, 0, 0, BASE_W, BASE_H);
+
+    drawingContext.restore();
+    pop();
+  }
+
+  // Draw Times/Language dynamically with current scale
+  if (posterOpacity > 0) {
+    const cx = (items.times.x + items.lang.x + items.lang.w) / 2;
+    const cy = items.times.y + ((items.lang.y + items.lang.h) - items.times.y) / 2;
+
+    push();
+    tint(255, posterOpacity * 255);
+    translate(cx, cy);
+    scale(textScale);
+    translate(-cx, -cy);
+    image(timesImg, items.times.x, items.times.y, items.times.w, items.times.h);
+    image(langImg, items.lang.x, items.lang.y, items.lang.w, items.lang.h);
+    pop();
+  }
 
   // Draw Phase 1 rectangle SVG
   if (rectOpacity > 0) {
@@ -551,30 +764,38 @@ function renderScene(t) {
     pop();
   }
   
-  // Draw Phase 2 tangent dots (on 2026, so use 2026 scale)
-  drawDots(tangentDots, dotScale2026, DOT_GROW_2026);
+  // Draw Phase 2 tangent dots (on 2026, so use 2026 scale, with stroke)
+  drawDots(tangentDots, dotScale2026, DOT_GROW_2026, true);
 
   // Draw Phase 3 fill dots (numbers2026 use 2026 scale, others use other scale)
   for (const elementName of Object.keys(fillDots)) {
     if (elementName === 'numbers2026') {
-      drawDots(fillDots[elementName], dotScale2026, DOT_GROW_2026);
+      drawDots(fillDots[elementName], dotScale2026, DOT_GROW_2026, true);
     } else {
-      drawDots(fillDots[elementName], dotScaleOther, DOT_GROW_OTHER);
+      // Other dots lose stroke in Phase 5 (posterOpacity == 0)
+      const showStroke = posterOpacity > 0;
+      drawDots(fillDots[elementName], dotScaleOther, DOT_GROW_OTHER, showStroke);
     }
   }
 }
 
-function drawDots(dots, scale = 1, maxScale = 1) {
+function drawDots(dots, scale = 1, maxScale = 1, showStroke = true) {
   for (const dot of dots) {
     if (dot.opacity <= 0) continue;
 
     push();
     fill(DOT_STYLE.fill[0], DOT_STYLE.fill[1], DOT_STYLE.fill[2], dot.opacity * 255);
-    stroke(DOT_STYLE.stroke[0], DOT_STYLE.stroke[1], DOT_STYLE.stroke[2], dot.opacity * 255);
-    // Scale stroke weight: goes from 1x to 2x as dots reach their max scale
-    const progress = maxScale > 1 ? (scale - 1) / (maxScale - 1) : 0;
-    const strokeScale = 1 + progress;  // 1x to 2x
-    strokeWeight(DOT_STYLE.strokeWeight * strokeScale);
+
+    if (showStroke) {
+      stroke(DOT_STYLE.stroke[0], DOT_STYLE.stroke[1], DOT_STYLE.stroke[2], dot.opacity * 255);
+      // Scale stroke weight: goes from 1x to 2x as dots reach their max scale
+      const progress = maxScale > 1 ? (scale - 1) / (maxScale - 1) : 0;
+      const strokeScale = 1 + progress;  // 1x to 2x
+      strokeWeight(DOT_STYLE.strokeWeight * strokeScale);
+    } else {
+      noStroke();
+    }
+
     circle(dot.x, dot.y, dot.r * 2 * scale);
     pop();
   }
@@ -637,31 +858,7 @@ function renderPosterTo(g) {
   g.push();
   g.clear();
   g.background(BG_HEX);
-
-  g.push();
-  g.tint(255, NUM_BASE_ALPHA);
-  g.image(numbersImg, 0, 0, BASE_W, BASE_H);
-  g.pop();
-
-  g.push();
-  g.tint(255, GLOW_ALPHA);
-  g.image(glowLayer, 0, 0, BASE_W, BASE_H);
-  g.pop();
-
-  g.image(topSVG, items.top.x, items.top.y, items.top.w, items.top.h);
-  g.image(addrSVG, items.addr.x, items.addr.y, items.addr.w, items.addr.h);
-  // Don't include Times/Language here - we'll draw them dynamically
-  // g.image(timesImg, items.times.x, items.times.y, items.times.w, items.times.h);
-  // g.image(langImg, items.lang.x, items.lang.y, items.lang.w, items.lang.h);
-  g.image(botLSVG, items.botL.x, items.botL.y, items.botL.w, items.botL.h);
-
-  drawClippedTo(g, coverLayer, 0, CUT.yMin, BASE_W, CUT.yMax - CUT.yMin);
-
-  g.push();
-  g.tint(255, OVERLAY_NUM_ALPHA);
-  drawClippedTo(g, numbersImg, 0, CUT.yMin, BASE_W, CUT.yMax - CUT.yMin);
-  g.pop();
-
+  // Just background - all content will be drawn dynamically
   g.pop();
 }
 
