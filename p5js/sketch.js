@@ -29,25 +29,29 @@ const GLOW_BLUR_PX = 35;
 // ===== TIMELINE (seconds) =====
 const TIMELINE = {
   // Phase 1: Rectangle animation
-  phase1Start: 1.0,
-  rectForm: 0.5,        // rectangle fades in
-  rectGrow: 1.0,        // rectangle expands
-  textGrow: 0.8,        // text scales up
-  holdExpanded: 0.5,    // pause at max
-  textShrink: 0.8,      // text scales back
-  rectShrink: 1.0,      // rectangle shrinks back
-  rectFade: 0.5,        // rectangle fades out
+  phase1Start: 1.7,
+  rectForm: 0.85,       // rectangle fades in
+  rectGrow: 1.7,        // rectangle expands
+  textGrow: 1.4,        // text scales up
+  holdExpanded: 0.85,   // pause at max
+  textShrink: 1.4,      // text scales back
+  rectShrink: 1.7,      // rectangle shrinks back
+  rectFade: 0.85,       // rectangle fades out
 
   // Phase 2: Tangent dots on 2026
-  phase2Start: 6.5,     // after phase 1 completes
-  tangentAppear: 0.3,   // tangent dots pop in
+  phase2Start: 10.4,    // after phase 1 completes
+  tangentAppear: 0.5,   // tangent dots pop in
 
   // Phase 3: Gradual fill
-  phase3Start: 7.0,
-  gradualFill: 4.0,     // time to reach 60% fill
+  phase3Start: 11.0,
+  gradualFill: 6.8,     // time to reach 60% fill
+
+  // Phase 4: Dots grow
+  phase4Start: 17.8,    // after phase 3 completes
+  dotsGrow: 3.4,        // dots grow to final size
 
   // End
-  holdFinal: 3.0
+  holdFinal: 5.0
 };
 
 // ===== DOT SETTINGS =====
@@ -68,6 +72,10 @@ const TANGENT_DOT_RADIUS = 4;
 
 const FILL_TARGET = 0.6;  // 60% fill
 const FILL_DOT_RADIUS = 3;
+
+// Phase 4: Dot growth
+const DOT_GROW_2026 = 8;  // 2026 dots grow 8x
+const DOT_GROW_OTHER = 4;  // Other dots grow 4x
 
 // Edge detection thresholds
 const EDGE_THRESHOLDS = {
@@ -102,6 +110,10 @@ let fillDots = {
   topBlock: [],
   bottomLeft: []
 };
+
+// Phase 4: Dot scaling
+let dotScale2026 = 1;  // Scale for 2026 dots
+let dotScaleOther = 1;  // Scale for other dots
 
 // All edge points (100%) for sampling
 let allEdges = {
@@ -336,14 +348,15 @@ function sampleEdges(edges, spacing) {
 
 function draw() {
   if (!systemReady) return;
-  
+
   const t = millis() / 1000;
-  
+
   // Update all phases
   updatePhase1(t);
   updatePhase2(t);
   updatePhase3(t);
-  
+  updatePhase4(t);
+
   // Render
   renderScene(t);
 }
@@ -480,6 +493,32 @@ function updatePhase3(t) {
   }
 }
 
+// ===== PHASE 4 UPDATE =====
+
+function updatePhase4(t) {
+  const p4 = TIMELINE.phase4Start;
+  const growEnd = p4 + TIMELINE.dotsGrow;
+
+  // Before phase 4
+  if (t < p4) {
+    dotScale2026 = 1;
+    dotScaleOther = 1;
+    return;
+  }
+
+  // Dots growing
+  if (t < growEnd) {
+    const progress = easeInOutCubic((t - p4) / TIMELINE.dotsGrow);
+    dotScale2026 = 1 + (DOT_GROW_2026 - 1) * progress;
+    dotScaleOther = 1 + (DOT_GROW_OTHER - 1) * progress;
+    return;
+  }
+
+  // After phase 4 - hold at max size
+  dotScale2026 = DOT_GROW_2026;
+  dotScaleOther = DOT_GROW_OTHER;
+}
+
 // ===== RENDER =====
 
 function renderScene(t) {
@@ -512,24 +551,31 @@ function renderScene(t) {
     pop();
   }
   
-  // Draw Phase 2 tangent dots
-  drawDots(tangentDots);
-  
-  // Draw Phase 3 fill dots
+  // Draw Phase 2 tangent dots (on 2026, so use 2026 scale)
+  drawDots(tangentDots, dotScale2026, DOT_GROW_2026);
+
+  // Draw Phase 3 fill dots (numbers2026 use 2026 scale, others use other scale)
   for (const elementName of Object.keys(fillDots)) {
-    drawDots(fillDots[elementName]);
+    if (elementName === 'numbers2026') {
+      drawDots(fillDots[elementName], dotScale2026, DOT_GROW_2026);
+    } else {
+      drawDots(fillDots[elementName], dotScaleOther, DOT_GROW_OTHER);
+    }
   }
 }
 
-function drawDots(dots) {
+function drawDots(dots, scale = 1, maxScale = 1) {
   for (const dot of dots) {
     if (dot.opacity <= 0) continue;
-    
+
     push();
     fill(DOT_STYLE.fill[0], DOT_STYLE.fill[1], DOT_STYLE.fill[2], dot.opacity * 255);
     stroke(DOT_STYLE.stroke[0], DOT_STYLE.stroke[1], DOT_STYLE.stroke[2], dot.opacity * 255);
-    strokeWeight(DOT_STYLE.strokeWeight);
-    circle(dot.x, dot.y, dot.r * 2);
+    // Scale stroke weight: goes from 1x to 2x as dots reach their max scale
+    const progress = maxScale > 1 ? (scale - 1) / (maxScale - 1) : 0;
+    const strokeScale = 1 + progress;  // 1x to 2x
+    strokeWeight(DOT_STYLE.strokeWeight * strokeScale);
+    circle(dot.x, dot.y, dot.r * 2 * scale);
     pop();
   }
 }

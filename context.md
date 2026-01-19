@@ -5,7 +5,7 @@ I'll build this systematically. Let me create the new animation system.Done! To 
 # SUMMARY FOR CONTINUATION
 
 ## Project Overview
-Animated poster for "Times Language 2026" exhibition. Three-phase animation system built in p5.js.
+Animated poster for "Times Language 2026" exhibition. Four-phase animation system built in p5.js with dynamic dot growth.
 
 ## Files Structure
 ```
@@ -35,7 +35,7 @@ Figma API credentials are stored in `.env` file:
 
 ## Animation Phases
 
-### Phase 1: Rectangle Animation (1.0s - 6.5s)
+### Phase 1: Rectangle Animation (1.7s - 10.4s)
 - Solid line rectangle (from rectangle.svg) fades in around "Times Language"
 - Rectangle expands outward (1.4x scale)
 - Text scales up to 1.25x (smaller than rectangle to fit nicely)
@@ -45,38 +45,49 @@ Figma API credentials are stored in `.env` file:
 - Rectangle fades out
 - **Note**: Times/Language are rendered dynamically (not in poster layer) to allow smooth scaling
 
-### Phase 2: Tangent Dots (6.5s - 7.0s)
+### Phase 2: Tangent Dots (10.4s - 11.0s)
 - Dots appear at points on "2026" where edges are straight (horizontal/vertical tangents)
 - All appear simultaneously with quick pop-in
 
-### Phase 3: Gradual Fill (7.0s - 11.0s)
+### Phase 3: Gradual Fill (11.0s - 17.8s)
 - Dots gradually appear on all elements (2026, Times, Language, address, top, bottom)
 - Fills to 60% density
 - Staggered appearance creates wave effect
+
+### Phase 4: Dot Growth (17.8s - 21.2s)
+- All dots grow to larger sizes with smooth animation
+- 2026 dots (tangent + fill) grow 8x their original size
+- Other dots (times, language, address, top, bottom) grow 4x their original size
+- Blue borders (stroke) grow from 1x to 2x thickness as dots expand
+- Hold at final size for 5 seconds
 
 ## Key Configuration (top of sketch.js)
 
 ```javascript
 const TIMELINE = {
-  phase1Start: 1.0,
-  rectForm: 0.5,
-  rectGrow: 1.0,
-  textGrow: 0.8,
-  holdExpanded: 0.5,
-  textShrink: 0.8,
-  rectShrink: 1.0,
-  rectFade: 0.5,
-  phase2Start: 6.5,
-  tangentAppear: 0.3,
-  phase3Start: 7.0,
-  gradualFill: 4.0,
-  holdFinal: 3.0
+  phase1Start: 1.7,
+  rectForm: 0.85,
+  rectGrow: 1.7,
+  textGrow: 1.4,
+  holdExpanded: 0.85,
+  textShrink: 1.4,
+  rectShrink: 1.7,
+  rectFade: 0.85,
+  phase2Start: 10.4,
+  tangentAppear: 0.5,
+  phase3Start: 11.0,
+  gradualFill: 6.8,
+  phase4Start: 17.8,
+  dotsGrow: 3.4,
+  holdFinal: 5.0
 };
 
 const RECT_GROW_SCALE = 1.4;      // Rectangle expansion multiplier
 const TEXT_GROW_SCALE = 1.25;     // Text expansion (smaller than rectangle)
 const FILL_TARGET = 0.6;          // 60% edge fill
 const TANGENT_THRESHOLD = 0.15;   // Lower = more tangent points
+const DOT_GROW_2026 = 8;          // 2026 dots grow 8x
+const DOT_GROW_OTHER = 4;         // Other dots grow 4x
 ```
 
 ## Edge Detection Thresholds
@@ -96,6 +107,8 @@ const EDGE_THRESHOLDS = {
 3. **Edge Tracing**: Scans image pixels, finds where alpha transitions from solid to transparent
 4. **Tangent Detection**: Analyzes local edge direction, selects points where edge is mostly horizontal or vertical
 5. **Sampling**: Grid-based sampling ensures even dot distribution
+6. **Phase 4 Dot Growth**: Dots scale with dynamic sizing - 2026 dots (8x), other dots (4x). Stroke weight scales from 1x to 2x as dots grow
+7. **Animation Timing**: All phases run ~70% slower (1.7x duration) for a more relaxed viewing experience. Total runtime: ~26 seconds
 
 ## How to Run
 ```bash
