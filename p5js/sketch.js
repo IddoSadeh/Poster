@@ -54,6 +54,7 @@ const TIMELINE = {
   // Phase 5: Brownian motion and blob formation
   phase5Start: 72.0,    // 60.0 + 12.0
   textFadeOut: 3.0,     // fade out original text (slower)
+  floatBeforeTransform: 15.0,  // dots float for a while before transforming
   dotTransform: 5.0,    // dots transform to blue/shrink (5s)
   blobForm: 20.0,       // dots slowly move to blob positions (much slower)
 
@@ -78,7 +79,7 @@ const RECT_POSTER_MARGIN = 20; // margin from poster edges when rectangle grows 
 const TANGENT_THRESHOLD = 0.15;  // how "straight" an edge must be (lower = more points)
 const TANGENT_DOT_RADIUS = 4;
 
-const FILL_TARGET = 0.42;  // 42% fill (reduced by 30% from original 60%)
+const FILL_TARGET = 0.3;  // 30% fill (reduced further to decrease busyness)
 const FILL_DOT_RADIUS = 3;
 
 // Phase 4: Dot growth
@@ -732,7 +733,8 @@ function updatePhase4(t) {
 function updatePhase5(t) {
   const p5 = TIMELINE.phase5Start;
   const fadeEnd = p5 + TIMELINE.textFadeOut;
-  const transformEnd = fadeEnd + TIMELINE.dotTransform;
+  const transformStart = fadeEnd + TIMELINE.floatBeforeTransform;
+  const transformEnd = transformStart + TIMELINE.dotTransform;
   const blobEnd = transformEnd + TIMELINE.blobForm;
 
   // Before phase 5
@@ -749,9 +751,9 @@ function updatePhase5(t) {
     posterOpacity = 0;
   }
 
-  // Transform dots (shrink blue dots, after text fades)
-  if (t >= fadeEnd && t < transformEnd) {
-    const overallProgress = (t - fadeEnd) / TIMELINE.dotTransform;
+  // Transform dots (shrink blue dots, after floating for a while)
+  if (t >= transformStart && t < transformEnd) {
+    const overallProgress = (t - transformStart) / TIMELINE.dotTransform;
 
     // Update transformation for tangent dots
     tangentDots.forEach(dot => {
@@ -784,10 +786,9 @@ function updatePhase5(t) {
     }
   }
 
-  // Apply Brownian motion and blob formation
-  if (t >= p5) {
-    const motionProgress = t >= transformEnd ?
-      Math.min(1, (t - transformEnd) / TIMELINE.blobForm) : 0;
+  // Apply Brownian motion and blob formation (starts after text fades)
+  if (t >= fadeEnd) {
+    const motionProgress = Math.min(1, (t - fadeEnd) / (TIMELINE.floatBeforeTransform + TIMELINE.dotTransform + TIMELINE.blobForm));
 
     // Update tangent dots (2026 dots - move to blobs)
     tangentDots.forEach(dot => {
