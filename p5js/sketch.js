@@ -77,11 +77,11 @@ const RECT_POSTER_MARGIN = 20; // margin from poster edges when rectangle grows 
 const TANGENT_THRESHOLD = 0.15;  // how "straight" an edge must be (lower = more points)
 const TANGENT_DOT_RADIUS = 4;
 
-const FILL_TARGET = 0.6;  // 60% fill
+const FILL_TARGET = 0.42;  // 42% fill (reduced by 30% from original 60%)
 const FILL_DOT_RADIUS = 3;
 
 // Phase 4: Dot growth
-const DOT_GROW_2026 = 8;  // 2026 dots grow 8x
+const DOT_GROW_2026 = 11;  // 2026 dots grow 11x (increased for more dramatic effect)
 const DOT_GROW_OTHER = 4;  // Other dots grow 4x
 
 // Phase 5: Brownian motion
