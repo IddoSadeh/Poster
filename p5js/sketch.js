@@ -8,7 +8,7 @@ const BASE_H = 1350;
 const BG_HEX = "#D9DDE6";
 
 // ===== Assets =====
-let numbersImg, topSVG, addrSVG, botLSVG, timesImg, langImg, rectangleSVG;
+let numbersImg, topSVG, addrSVG, botLSVG, timesImg, langImg, rectangleLinesSVG;
 
 // ===== Element positions (BASE coords) =====
 const items = {
@@ -36,22 +36,23 @@ const TIMELINE = {
   holdExpanded: 0.85,   // pause at max
   textShrink: 1.4,      // text scales back
   rectShrink: 1.7,      // rectangle shrinks back
+  rectGrowToPoster: 2.5, // rectangle grows to fill poster
   rectFade: 0.85,       // rectangle fades out
 
   // Phase 2: Tangent dots on 2026
-  phase2Start: 10.4,    // after phase 1 completes
+  phase2Start: 12.9,    // after phase 1 completes (1.7 + 0.85 + 1.7 + 1.4 + 0.85 + 1.4 + 1.7 + 2.5 + 0.85)
   tangentAppear: 0.5,   // tangent dots pop in
 
   // Phase 3: Gradual fill
-  phase3Start: 11.0,
+  phase3Start: 13.4,    // 12.9 + 0.5
   gradualFill: 6.8,     // time to reach 60% fill
 
   // Phase 4: Dots grow
-  phase4Start: 17.8,    // after phase 3 completes
+  phase4Start: 20.2,    // 13.4 + 6.8
   dotsGrow: 3.4,        // dots grow to final size
 
   // Phase 5: Brownian motion and blob formation
-  phase5Start: 21.2,    // after phase 4 completes
+  phase5Start: 23.6,    // 20.2 + 3.4
   textFadeOut: 1.0,     // fade out original text
   blobForm: 10.0,       // dots slowly move to blob positions
 
@@ -68,9 +69,10 @@ const DOT_STYLE = {
 
 const RECT_DOT_SPACING = 12;  // spacing for rectangle border dots
 const RECT_DOT_RADIUS = 3;
-const RECT_PADDING = 15;      // padding around Times/Language
-const RECT_GROW_SCALE = 1.4;  // how much rectangle grows (1.4 = 40% bigger)
-const TEXT_GROW_SCALE = 1.25; // how much text grows (smaller than rectangle)
+const RECT_PADDING = 30;      // padding around Times/Language (increased to avoid dot overlap)
+const RECT_GROW_SCALE = 1.2;  // how much rectangle grows (reduced to avoid going off-screen)
+const TEXT_GROW_SCALE = 1.15; // how much text grows (smaller than rectangle)
+const RECT_POSTER_MARGIN = 20; // margin from poster edges when rectangle grows to poster size
 
 const TANGENT_THRESHOLD = 0.15;  // how "straight" an edge must be (lower = more points)
 const TANGENT_DOT_RADIUS = 4;
@@ -105,10 +107,16 @@ let maskSoft, coverLayer, glowLayer, posterLayer;
 
 // Phase 1: Rectangle SVG
 let rectOpacity = 0;
-let rectScale = 1;
+let rectScaleX = 1;
+let rectScaleY = 1;
 let rectBounds = { x: 0, y: 0, w: 0, h: 0 };
+let rectInitialBounds = { x: 0, y: 0, w: 0, h: 0 };  // Store initial bounds
+let rectCurrentBounds = { x: 0, y: 0, w: 0, h: 0 };  // Current animated bounds
 let rectCenter = { x: 0, y: 0 };
 let textScale = 1;
+let cornerDots = [];  // Corner dots that stay circular
+let cornerHandles = [];  // Corner handles (small rectangles)
+let rectFadeOutEnabled = false;  // Set to true to fade out rectangle at end
 
 // Phase 2: Tangent dots (points with straight edges)
 let tangentDots = [];
@@ -150,7 +158,7 @@ function preload() {
   botLSVG    = loadImage("bottomLeft.svg");
   timesImg   = loadImage("Times.png");
   langImg    = loadImage("Language.png");
-  rectangleSVG = loadImage("rectangle.svg");
+  rectangleLinesSVG = loadImage("rectangle-lines.svg");
 }
 
 function setup() {
@@ -195,11 +203,39 @@ function initPhase1() {
     h: (langRect.y + langRect.h) - timesRect.y + RECT_PADDING * 2
   };
 
+  // Store initial bounds for animation
+  rectInitialBounds = { ...rectBounds };
+  rectCurrentBounds = { ...rectBounds };
+
   // Calculate center for scaling
   rectCenter = {
     x: rectBounds.x + rectBounds.w / 2,
     y: rectBounds.y + rectBounds.h / 2
   };
+
+  // Initialize corner dots (positioned at rectangle corners, will be updated during animation)
+  // Each dot has outer circle (r=5.5) and inner circle (r=2.44)
+  const dotOuterRadius = 5.5;
+  const dotInnerRadius = 2.44;
+  const dotOffset = 17.5;  // offset from corner
+
+  cornerDots = [
+    { corner: 'topLeft', outerR: dotOuterRadius, innerR: dotInnerRadius, offset: dotOffset },
+    { corner: 'topRight', outerR: dotOuterRadius, innerR: dotInnerRadius, offset: dotOffset },
+    { corner: 'bottomLeft', outerR: dotOuterRadius, innerR: dotInnerRadius, offset: dotOffset },
+    { corner: 'bottomRight', outerR: dotOuterRadius, innerR: dotInnerRadius, offset: dotOffset }
+  ];
+
+  // Initialize corner handles (small rectangles at corners)
+  const handleW = 10;
+  const handleH = 11.089;
+
+  cornerHandles = [
+    { corner: 'topLeft', w: handleW, h: handleH },
+    { corner: 'topRight', w: handleW, h: handleH },
+    { corner: 'bottomLeft', w: handleW, h: handleH },
+    { corner: 'bottomRight', w: handleW, h: handleH }
+  ];
 
   console.log(`  Rectangle bounds: ${Math.round(rectBounds.w)} x ${Math.round(rectBounds.h)}`);
 }
@@ -433,12 +469,23 @@ function updatePhase1(t) {
   const holdEnd = textGrowEnd + TIMELINE.holdExpanded;
   const textShrinkEnd = holdEnd + TIMELINE.textShrink;
   const rectShrinkEnd = textShrinkEnd + TIMELINE.rectShrink;
-  const fadeEnd = rectShrinkEnd + TIMELINE.rectFade;
+  const growToPosterEnd = rectShrinkEnd + TIMELINE.rectGrowToPoster;
+  const fadeEnd = growToPosterEnd + TIMELINE.rectFade;
+
+  // Target bounds: poster edges with margin
+  const targetBounds = {
+    x: RECT_POSTER_MARGIN,
+    y: RECT_POSTER_MARGIN,
+    w: BASE_W - RECT_POSTER_MARGIN * 2,
+    h: BASE_H - RECT_POSTER_MARGIN * 2
+  };
 
   // Before phase 1
   if (t < p1) {
     rectOpacity = 0;
-    rectScale = 1;
+    rectScaleX = 1;
+    rectScaleY = 1;
+    rectCurrentBounds = { ...rectInitialBounds };
     textScale = 1;
     return;
   }
@@ -447,16 +494,21 @@ function updatePhase1(t) {
   if (t < formEnd) {
     const progress = (t - p1) / TIMELINE.rectForm;
     rectOpacity = easeOutCubic(progress);
-    rectScale = 1;
+    rectScaleX = 1;
+    rectScaleY = 1;
+    rectCurrentBounds = { ...rectInitialBounds };
     textScale = 1;
     return;
   }
 
-  // Rectangle growing
+  // Rectangle growing (uniform scaling from center)
   if (t < growEnd) {
     const progress = easeInOutCubic((t - formEnd) / TIMELINE.rectGrow);
+    const scale = 1 + (RECT_GROW_SCALE - 1) * progress;
     rectOpacity = 1;
-    rectScale = 1 + (RECT_GROW_SCALE - 1) * progress;
+    rectScaleX = scale;
+    rectScaleY = scale;
+    rectCurrentBounds = { ...rectInitialBounds };
     textScale = 1;
     return;
   }
@@ -465,7 +517,9 @@ function updatePhase1(t) {
   if (t < textGrowEnd) {
     const progress = easeInOutCubic((t - growEnd) / TIMELINE.textGrow);
     rectOpacity = 1;
-    rectScale = RECT_GROW_SCALE;
+    rectScaleX = RECT_GROW_SCALE;
+    rectScaleY = RECT_GROW_SCALE;
+    rectCurrentBounds = { ...rectInitialBounds };
     textScale = 1 + (TEXT_GROW_SCALE - 1) * progress;
     return;
   }
@@ -473,7 +527,9 @@ function updatePhase1(t) {
   // Hold expanded
   if (t < holdEnd) {
     rectOpacity = 1;
-    rectScale = RECT_GROW_SCALE;
+    rectScaleX = RECT_GROW_SCALE;
+    rectScaleY = RECT_GROW_SCALE;
+    rectCurrentBounds = { ...rectInitialBounds };
     textScale = TEXT_GROW_SCALE;
     return;
   }
@@ -482,32 +538,63 @@ function updatePhase1(t) {
   if (t < textShrinkEnd) {
     const progress = easeInOutCubic((t - holdEnd) / TIMELINE.textShrink);
     rectOpacity = 1;
-    rectScale = RECT_GROW_SCALE;
+    rectScaleX = RECT_GROW_SCALE;
+    rectScaleY = RECT_GROW_SCALE;
+    rectCurrentBounds = { ...rectInitialBounds };
     textScale = TEXT_GROW_SCALE - (TEXT_GROW_SCALE - 1) * progress;
     return;
   }
 
-  // Rectangle shrinking
+  // Rectangle shrinking (back to uniform 1.0)
   if (t < rectShrinkEnd) {
     const progress = easeInOutCubic((t - textShrinkEnd) / TIMELINE.rectShrink);
+    const scale = RECT_GROW_SCALE - (RECT_GROW_SCALE - 1) * progress;
     rectOpacity = 1;
-    rectScale = RECT_GROW_SCALE - (RECT_GROW_SCALE - 1) * progress;
+    rectScaleX = scale;
+    rectScaleY = scale;
+    rectCurrentBounds = { ...rectInitialBounds };
     textScale = 1;
     return;
   }
 
-  // Fading out
-  if (t < fadeEnd) {
-    const progress = (t - rectShrinkEnd) / TIMELINE.rectFade;
+  // Rectangle growing to poster edges (interpolate bounds directly)
+  if (t < growToPosterEnd) {
+    const progress = easeInOutCubic((t - rectShrinkEnd) / TIMELINE.rectGrowToPoster);
+    rectOpacity = 1;
+    rectScaleX = 1;  // No scaling, we'll use bounds directly
+    rectScaleY = 1;
+
+    // Interpolate bounds from initial to target (poster edges)
+    rectCurrentBounds = {
+      x: rectInitialBounds.x + (targetBounds.x - rectInitialBounds.x) * progress,
+      y: rectInitialBounds.y + (targetBounds.y - rectInitialBounds.y) * progress,
+      w: rectInitialBounds.w + (targetBounds.w - rectInitialBounds.w) * progress,
+      h: rectInitialBounds.h + (targetBounds.h - rectInitialBounds.h) * progress
+    };
+    textScale = 1;
+    return;
+  }
+
+  // Fading out (if enabled)
+  if (rectFadeOutEnabled && t < fadeEnd) {
+    const progress = (t - growToPosterEnd) / TIMELINE.rectFade;
     rectOpacity = 1 - easeInOutCubic(progress);
-    rectScale = 1;
+    rectScaleX = 1;
+    rectScaleY = 1;
+    rectCurrentBounds = { ...targetBounds };
     textScale = 1;
     return;
   }
 
-  // After phase 1
-  rectOpacity = 0;
-  rectScale = 1;
+  // After fade or holding at poster size
+  if (rectFadeOutEnabled) {
+    rectOpacity = 0;
+  } else {
+    rectOpacity = 1;
+  }
+  rectScaleX = 1;
+  rectScaleY = 1;
+  rectCurrentBounds = { ...targetBounds };
   textScale = 1;
 }
 
@@ -753,15 +840,37 @@ function renderScene(t) {
     pop();
   }
 
-  // Draw Phase 1 rectangle SVG
+  // Draw Phase 1 rectangle
   if (rectOpacity > 0) {
+    // Calculate actual rectangle position and size
+    let drawX, drawY, drawW, drawH;
+
+    if (rectScaleX !== 1 || rectScaleY !== 1) {
+      // Uniform scaling phase - scale from center
+      const scaledW = rectBounds.w * rectScaleX;
+      const scaledH = rectBounds.h * rectScaleY;
+      drawX = rectCenter.x - scaledW / 2;
+      drawY = rectCenter.y - scaledH / 2;
+      drawW = scaledW;
+      drawH = scaledH;
+    } else {
+      // Direct bounds animation (poster-fit phase)
+      drawX = rectCurrentBounds.x;
+      drawY = rectCurrentBounds.y;
+      drawW = rectCurrentBounds.w;
+      drawH = rectCurrentBounds.h;
+    }
+
+    // Draw rectangle with consistent stroke
     push();
-    tint(255, rectOpacity * 255);
-    translate(rectCenter.x, rectCenter.y);
-    scale(rectScale);
-    translate(-rectCenter.x, -rectCenter.y);
-    image(rectangleSVG, rectBounds.x, rectBounds.y, rectBounds.w, rectBounds.h);
+    noFill();
+    stroke(58, 141, 237, rectOpacity * 255); // #3A8DED
+    strokeWeight(1);
+    rect(drawX, drawY, drawW, drawH);
     pop();
+
+    // Draw corner dots and handles (always circular)
+    drawCornerElements(rectOpacity, drawX, drawY, drawW, drawH);
   }
   
   // Draw Phase 2 tangent dots (on 2026, so use 2026 scale, with stroke)
@@ -776,6 +885,71 @@ function renderScene(t) {
       const showStroke = posterOpacity > 0;
       drawDots(fillDots[elementName], dotScaleOther, DOT_GROW_OTHER, showStroke);
     }
+  }
+}
+
+function drawCornerElements(opacity, x, y, w, h) {
+  // Calculate corners based on actual drawn rectangle
+  const corners = {
+    topLeft: { x: x, y: y },
+    topRight: { x: x + w, y: y },
+    bottomLeft: { x: x, y: y + h },
+    bottomRight: { x: x + w, y: y + h }
+  };
+
+  const blueColor = [58, 141, 237]; // #3A8DED
+
+  // Draw corner handles (small rectangles)
+  push();
+  fill(blueColor[0], blueColor[1], blueColor[2], opacity * 255);
+  noStroke();
+  for (const handle of cornerHandles) {
+    const corner = corners[handle.corner];
+    if (handle.corner === 'topLeft') {
+      rect(corner.x, corner.y, handle.w, handle.h);
+    } else if (handle.corner === 'topRight') {
+      rect(corner.x - handle.w, corner.y, handle.w, handle.h);
+    } else if (handle.corner === 'bottomLeft') {
+      rect(corner.x, corner.y - handle.h, handle.w, handle.h);
+    } else if (handle.corner === 'bottomRight') {
+      rect(corner.x - handle.w, corner.y - handle.h, handle.w, handle.h);
+    }
+  }
+  pop();
+
+  // Draw corner dots (always circular)
+  for (const dot of cornerDots) {
+    const corner = corners[dot.corner];
+    let dotX = corner.x;
+    let dotY = corner.y;
+
+    // Offset dots from corner
+    if (dot.corner === 'topLeft') {
+      dotX += dot.offset;
+      dotY += dot.offset;
+    } else if (dot.corner === 'topRight') {
+      dotX -= dot.offset;
+      dotY += dot.offset;
+    } else if (dot.corner === 'bottomLeft') {
+      dotX += dot.offset;
+      dotY -= dot.offset;
+    } else if (dot.corner === 'bottomRight') {
+      dotX -= dot.offset;
+      dotY -= dot.offset;
+    }
+
+    push();
+    // Outer circle (stroke only)
+    noFill();
+    stroke(blueColor[0], blueColor[1], blueColor[2], opacity * 255);
+    strokeWeight(1);
+    circle(dotX, dotY, dot.outerR * 2);
+
+    // Inner circle (filled)
+    fill(blueColor[0], blueColor[1], blueColor[2], opacity * 255);
+    noStroke();
+    circle(dotX, dotY, dot.innerR * 2);
+    pop();
   }
 }
 

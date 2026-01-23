@@ -24,7 +24,7 @@ p5js/
 - `topBlock.svg` - Top right text block
 - `addressBlock.svg` - Address text
 - `bottomLeft.svg` - Bottom left text
-- `rectangle.svg` - Solid line rectangle for Phase 1 animation
+- `rectangle-lines.svg` - Rectangle SVG reference (Phase 1 now uses p5.js primitives)
 - *(Optional)* `Group 70.svg` - Corner handle icon
 
 ## Environment Variables
@@ -35,31 +35,38 @@ Figma API credentials are stored in `.env` file:
 
 ## Animation Phases
 
-### Phase 1: Rectangle Animation (1.7s - 10.4s)
-- Solid line rectangle (from rectangle.svg) fades in around "Times Language"
-- Rectangle expands outward (1.4x scale)
-- Text scales up to 1.25x (smaller than rectangle to fit nicely)
+### Phase 1: Rectangle Animation (1.7s - 12.9s)
+- Blue rectangle with corner dots/handles fades in around "Times Language"
+- Rectangle expands outward uniformly (1.2x scale)
+- Text scales up to 1.15x (smaller than rectangle to fit nicely)
 - Hold at expanded state
 - Text shrinks back to normal
-- Rectangle shrinks back
-- Rectangle fades out
+- Rectangle shrinks back to initial size
+- **Rectangle grows to fit poster edges** (with 20px margin) - NEW!
+- Rectangle stays visible (optional fade-out controlled by `rectFadeOutEnabled`)
+- **Implementation**: Rectangle drawn with p5.js primitives (consistent 1px stroke), corner dots/handles drawn separately to stay circular during non-uniform scaling
 - **Note**: Times/Language are rendered dynamically (not in poster layer) to allow smooth scaling
 
-### Phase 2: Tangent Dots (10.4s - 11.0s)
+### Phase 2: Tangent Dots (12.9s - 13.4s)
 - Dots appear at points on "2026" where edges are straight (horizontal/vertical tangents)
 - All appear simultaneously with quick pop-in
 
-### Phase 3: Gradual Fill (11.0s - 17.8s)
+### Phase 3: Gradual Fill (13.4s - 20.2s)
 - Dots gradually appear on all elements (2026, Times, Language, address, top, bottom)
 - Fills to 60% density
 - Staggered appearance creates wave effect
 
-### Phase 4: Dot Growth (17.8s - 21.2s)
+### Phase 4: Dot Growth (20.2s - 23.6s)
 - All dots grow to larger sizes with smooth animation
 - 2026 dots (tangent + fill) grow 8x their original size
 - Other dots (times, language, address, top, bottom) grow 4x their original size
 - Blue borders (stroke) grow from 1x to 2x thickness as dots expand
 - Hold at final size for 5 seconds
+
+### Phase 5: Brownian Motion (23.6s+)
+- Original text/graphics fade out
+- 2026 dots move toward 5 blob centers with Brownian motion
+- Other dots drift freely with gentle Brownian motion
 
 ## Key Configuration (top of sketch.js)
 
@@ -72,22 +79,29 @@ const TIMELINE = {
   holdExpanded: 0.85,
   textShrink: 1.4,
   rectShrink: 1.7,
+  rectGrowToPoster: 2.5,  // NEW: Rectangle grows to poster edges
   rectFade: 0.85,
-  phase2Start: 10.4,
+  phase2Start: 12.9,      // Updated timing
   tangentAppear: 0.5,
-  phase3Start: 11.0,
+  phase3Start: 13.4,      // Updated timing
   gradualFill: 6.8,
-  phase4Start: 17.8,
+  phase4Start: 20.2,      // Updated timing
   dotsGrow: 3.4,
+  phase5Start: 23.6,      // Updated timing
+  textFadeOut: 1.0,
+  blobForm: 10.0,
   holdFinal: 5.0
 };
 
-const RECT_GROW_SCALE = 1.4;      // Rectangle expansion multiplier
-const TEXT_GROW_SCALE = 1.25;     // Text expansion (smaller than rectangle)
+const RECT_PADDING = 30;          // Padding around Times/Language (prevents dot overlap)
+const RECT_GROW_SCALE = 1.2;      // Rectangle uniform expansion multiplier
+const TEXT_GROW_SCALE = 1.15;     // Text expansion (smaller than rectangle)
+const RECT_POSTER_MARGIN = 20;    // Margin from poster edges in final position
 const FILL_TARGET = 0.6;          // 60% edge fill
 const TANGENT_THRESHOLD = 0.15;   // Lower = more tangent points
 const DOT_GROW_2026 = 8;          // 2026 dots grow 8x
 const DOT_GROW_OTHER = 4;         // Other dots grow 4x
+const rectFadeOutEnabled = false; // Set to true to fade out rectangle at end
 ```
 
 ## Edge Detection Thresholds
@@ -102,13 +116,14 @@ const EDGE_THRESHOLDS = {
 
 ## Technical Notes
 
-1. **Phase 1 Rectangle**: Uses solid line SVG (rectangle.svg) instead of dots, scales from center
+1. **Phase 1 Rectangle**: Drawn with p5.js `rect()` primitives (not SVG) for consistent 1px stroke during non-uniform scaling. Corner dots and handles drawn separately to stay circular. Rectangle animates from initial bounds around Times/Language to poster edges (with margin).
 2. **Dynamic Text Rendering**: Times/Language are NOT in poster layer - rendered every frame with transform scaling for smooth animation
 3. **Edge Tracing**: Scans image pixels, finds where alpha transitions from solid to transparent
 4. **Tangent Detection**: Analyzes local edge direction, selects points where edge is mostly horizontal or vertical
 5. **Sampling**: Grid-based sampling ensures even dot distribution
 6. **Phase 4 Dot Growth**: Dots scale with dynamic sizing - 2026 dots (8x), other dots (4x). Stroke weight scales from 1x to 2x as dots grow
-7. **Animation Timing**: All phases run ~70% slower (1.7x duration) for a more relaxed viewing experience. Total runtime: ~26 seconds
+7. **Phase 5 Blob Formation**: 2026 dots assigned to 5 blob centers, move with attraction force and Brownian motion. Other dots drift freely.
+8. **Animation Timing**: All phases run ~70% slower (1.7x duration) for a more relaxed viewing experience. Total runtime: ~33 seconds
 
 ## How to Run
 ```bash
