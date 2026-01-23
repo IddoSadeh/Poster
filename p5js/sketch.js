@@ -29,35 +29,35 @@ const GLOW_BLUR_PX = 35;
 // ===== TIMELINE (seconds) =====
 const TIMELINE = {
   // Phase 1: Rectangle animation
-  phase1Start: 1.7,
-  rectForm: 0.85,       // rectangle fades in
-  rectGrow: 1.7,        // rectangle expands
-  textGrow: 1.4,        // text scales up
-  holdExpanded: 0.85,   // pause at max
-  textShrink: 1.4,      // text scales back
-  rectShrink: 1.7,      // rectangle shrinks back
-  rectGrowToPoster: 2.5, // rectangle grows to fill poster
-  rectFade: 0.85,       // rectangle fades out
+  phase1Start: 2.5,
+  rectForm: 2.0,        // rectangle fades in (slower)
+  rectGrow: 3.5,        // rectangle expands (slower)
+  textGrow: 3.0,        // text scales up (slower)
+  holdExpanded: 2.0,    // pause at max (longer)
+  textShrink: 3.0,      // text scales back (slower)
+  rectShrink: 3.5,      // rectangle shrinks back (slower)
+  rectGrowToPoster: 5.0, // rectangle grows to fill poster (much slower)
+  rectFade: 2.5,        // rectangle fades out (slower)
 
   // Phase 2: Tangent dots on 2026
-  phase2Start: 12.9,    // after phase 1 completes (1.7 + 0.85 + 1.7 + 1.4 + 0.85 + 1.4 + 1.7 + 2.5 + 0.85)
-  tangentAppear: 0.5,   // tangent dots pop in
+  phase2Start: 27.0,    // after phase 1 completes
+  tangentAppear: 8.0,   // tangent dots appear asynchronously (very slow)
 
   // Phase 3: Gradual fill
-  phase3Start: 13.4,    // 12.9 + 0.5
-  gradualFill: 6.8,     // time to reach 60% fill
+  phase3Start: 35.0,    // 27.0 + 8.0
+  gradualFill: 25.0,    // time to reach 60% fill (very slow, entrancing)
 
   // Phase 4: Dots grow
-  phase4Start: 20.2,    // 13.4 + 6.8
-  dotsGrow: 3.4,        // dots grow to final size
+  phase4Start: 60.0,    // 35.0 + 25.0
+  dotsGrow: 12.0,       // dots grow to final size (asynchronous, much slower)
 
   // Phase 5: Brownian motion and blob formation
-  phase5Start: 23.6,    // 20.2 + 3.4
-  textFadeOut: 1.0,     // fade out original text
-  blobForm: 10.0,       // dots slowly move to blob positions
+  phase5Start: 72.0,    // 60.0 + 12.0
+  textFadeOut: 3.0,     // fade out original text (slower)
+  blobForm: 20.0,       // dots slowly move to blob positions (much slower)
 
   // End
-  holdFinal: 5.0
+  holdFinal: 10.0       // longer hold at end
 };
 
 // ===== DOT SETTINGS =====
@@ -116,7 +116,9 @@ let rectCenter = { x: 0, y: 0 };
 let textScale = 1;
 let cornerDots = [];  // Corner dots that stay circular
 let cornerHandles = [];  // Corner handles (small rectangles)
-let rectFadeOutEnabled = false;  // Set to true to fade out rectangle at end
+let rectFadeOutEnabled = true;  // Set to true to fade out rectangle at end
+let cornerDotsOpacity = 1;  // Separate opacity for corner dots (stay visible)
+let cornerHandlesOpacity = 1;  // Separate opacity for corner handles (fade with rect)
 
 // Phase 2: Tangent dots (points with straight edges)
 let tangentDots = [];
@@ -310,7 +312,10 @@ function findTangentPoints(edges, threshold, radius) {
         x: edge.x,
         y: edge.y,
         r: radius,
-        opacity: 0
+        opacity: 0,
+        delay: Math.random(),  // Random delay 0-1 for asynchronous appearance
+        growthDelay: Math.random(),  // Separate delay for growth phase
+        scale: 1  // Individual scale for asynchronous growth
       });
     }
   }
@@ -335,14 +340,16 @@ function initPhase3() {
     const shuffled = [...edges].sort(() => Math.random() - 0.5);
     const sampled = shuffled.slice(0, targetCount);
     
-    // Create dots with staggered appearance times
+    // Create dots with random staggered appearance times
     sampled.forEach((edge, i) => {
       fillDots[elementName].push({
         x: edge.x,
         y: edge.y,
         r: FILL_DOT_RADIUS,
         opacity: 0,
-        delay: i / sampled.length  // 0 to 1, used for staggered appearance
+        delay: Math.random(),  // Random delay for more organic appearance
+        growthDelay: Math.random(),  // Separate delay for growth phase
+        scale: 1  // Individual scale for asynchronous growth
       });
     });
     
@@ -483,6 +490,8 @@ function updatePhase1(t) {
   // Before phase 1
   if (t < p1) {
     rectOpacity = 0;
+    cornerDotsOpacity = 0;
+    cornerHandlesOpacity = 0;
     rectScaleX = 1;
     rectScaleY = 1;
     rectCurrentBounds = { ...rectInitialBounds };
@@ -494,6 +503,8 @@ function updatePhase1(t) {
   if (t < formEnd) {
     const progress = (t - p1) / TIMELINE.rectForm;
     rectOpacity = easeOutCubic(progress);
+    cornerDotsOpacity = easeOutCubic(progress);
+    cornerHandlesOpacity = easeOutCubic(progress);
     rectScaleX = 1;
     rectScaleY = 1;
     rectCurrentBounds = { ...rectInitialBounds };
@@ -506,6 +517,8 @@ function updatePhase1(t) {
     const progress = easeInOutCubic((t - formEnd) / TIMELINE.rectGrow);
     const scale = 1 + (RECT_GROW_SCALE - 1) * progress;
     rectOpacity = 1;
+    cornerDotsOpacity = 1;
+    cornerHandlesOpacity = 1;
     rectScaleX = scale;
     rectScaleY = scale;
     rectCurrentBounds = { ...rectInitialBounds };
@@ -517,6 +530,8 @@ function updatePhase1(t) {
   if (t < textGrowEnd) {
     const progress = easeInOutCubic((t - growEnd) / TIMELINE.textGrow);
     rectOpacity = 1;
+    cornerDotsOpacity = 1;
+    cornerHandlesOpacity = 1;
     rectScaleX = RECT_GROW_SCALE;
     rectScaleY = RECT_GROW_SCALE;
     rectCurrentBounds = { ...rectInitialBounds };
@@ -527,6 +542,8 @@ function updatePhase1(t) {
   // Hold expanded
   if (t < holdEnd) {
     rectOpacity = 1;
+    cornerDotsOpacity = 1;
+    cornerHandlesOpacity = 1;
     rectScaleX = RECT_GROW_SCALE;
     rectScaleY = RECT_GROW_SCALE;
     rectCurrentBounds = { ...rectInitialBounds };
@@ -538,6 +555,8 @@ function updatePhase1(t) {
   if (t < textShrinkEnd) {
     const progress = easeInOutCubic((t - holdEnd) / TIMELINE.textShrink);
     rectOpacity = 1;
+    cornerDotsOpacity = 1;
+    cornerHandlesOpacity = 1;
     rectScaleX = RECT_GROW_SCALE;
     rectScaleY = RECT_GROW_SCALE;
     rectCurrentBounds = { ...rectInitialBounds };
@@ -550,6 +569,8 @@ function updatePhase1(t) {
     const progress = easeInOutCubic((t - textShrinkEnd) / TIMELINE.rectShrink);
     const scale = RECT_GROW_SCALE - (RECT_GROW_SCALE - 1) * progress;
     rectOpacity = 1;
+    cornerDotsOpacity = 1;
+    cornerHandlesOpacity = 1;
     rectScaleX = scale;
     rectScaleY = scale;
     rectCurrentBounds = { ...rectInitialBounds };
@@ -561,6 +582,8 @@ function updatePhase1(t) {
   if (t < growToPosterEnd) {
     const progress = easeInOutCubic((t - rectShrinkEnd) / TIMELINE.rectGrowToPoster);
     rectOpacity = 1;
+    cornerDotsOpacity = 1;
+    cornerHandlesOpacity = 1;
     rectScaleX = 1;  // No scaling, we'll use bounds directly
     rectScaleY = 1;
 
@@ -579,6 +602,8 @@ function updatePhase1(t) {
   if (rectFadeOutEnabled && t < fadeEnd) {
     const progress = (t - growToPosterEnd) / TIMELINE.rectFade;
     rectOpacity = 1 - easeInOutCubic(progress);
+    cornerDotsOpacity = 1;  // Keep dots visible
+    cornerHandlesOpacity = 1 - easeInOutCubic(progress);  // Fade handles with rect
     rectScaleX = 1;
     rectScaleY = 1;
     rectCurrentBounds = { ...targetBounds };
@@ -589,8 +614,12 @@ function updatePhase1(t) {
   // After fade or holding at poster size
   if (rectFadeOutEnabled) {
     rectOpacity = 0;
+    cornerDotsOpacity = 1;  // Keep dots visible
+    cornerHandlesOpacity = 0;  // Fade handles with rect
   } else {
     rectOpacity = 1;
+    cornerDotsOpacity = 1;
+    cornerHandlesOpacity = 1;
   }
   rectScaleX = 1;
   rectScaleY = 1;
@@ -603,19 +632,19 @@ function updatePhase1(t) {
 function updatePhase2(t) {
   const p2 = TIMELINE.phase2Start;
   const appearEnd = p2 + TIMELINE.tangentAppear;
-  
+
   if (t < p2) {
     tangentDots.forEach(d => d.opacity = 0);
     return;
   }
-  
-  if (t < appearEnd) {
-    const progress = easeOutCubic((t - p2) / TIMELINE.tangentAppear);
-    tangentDots.forEach(d => d.opacity = progress);
-    return;
-  }
-  
-  tangentDots.forEach(d => d.opacity = 1);
+
+  const overallProgress = Math.min(1, (t - p2) / TIMELINE.tangentAppear);
+
+  // Each dot appears at a different time based on its delay
+  tangentDots.forEach(d => {
+    const dotProgress = Math.max(0, (overallProgress - d.delay * 0.7) / 0.3);
+    d.opacity = easeOutCubic(Math.min(1, dotProgress));
+  });
 }
 
 // ===== PHASE 3 UPDATE =====
@@ -652,20 +681,34 @@ function updatePhase4(t) {
   if (t < p4) {
     dotScale2026 = 1;
     dotScaleOther = 1;
+    // Reset all dot scales
+    tangentDots.forEach(d => d.scale = 1);
+    for (const elementName of Object.keys(fillDots)) {
+      fillDots[elementName].forEach(d => d.scale = 1);
+    }
     return;
   }
 
-  // Dots growing
-  if (t < growEnd) {
-    const progress = easeInOutCubic((t - p4) / TIMELINE.dotsGrow);
-    dotScale2026 = 1 + (DOT_GROW_2026 - 1) * progress;
-    dotScaleOther = 1 + (DOT_GROW_OTHER - 1) * progress;
-    return;
+  const overallProgress = Math.min(1, (t - p4) / TIMELINE.dotsGrow);
+
+  // Update tangent dots (2026) with asynchronous growth
+  tangentDots.forEach(d => {
+    const dotProgress = Math.max(0, (overallProgress - d.growthDelay * 0.7) / 0.3);
+    d.scale = 1 + (DOT_GROW_2026 - 1) * easeInOutCubic(Math.min(1, dotProgress));
+  });
+
+  // Update fill dots with asynchronous growth
+  for (const elementName of Object.keys(fillDots)) {
+    const targetScale = elementName === 'numbers2026' ? DOT_GROW_2026 : DOT_GROW_OTHER;
+    fillDots[elementName].forEach(d => {
+      const dotProgress = Math.max(0, (overallProgress - d.growthDelay * 0.7) / 0.3);
+      d.scale = 1 + (targetScale - 1) * easeInOutCubic(Math.min(1, dotProgress));
+    });
   }
 
-  // After phase 4 - hold at max size
-  dotScale2026 = DOT_GROW_2026;
-  dotScaleOther = DOT_GROW_OTHER;
+  // Keep global scales for backwards compatibility (use average/max)
+  dotScale2026 = 1 + (DOT_GROW_2026 - 1) * overallProgress;
+  dotScaleOther = 1 + (DOT_GROW_OTHER - 1) * overallProgress;
 }
 
 // ===== PHASE 5 UPDATE =====
@@ -840,8 +883,8 @@ function renderScene(t) {
     pop();
   }
 
-  // Draw Phase 1 rectangle
-  if (rectOpacity > 0) {
+  // Draw Phase 1 rectangle and corner elements
+  if (rectOpacity > 0 || cornerDotsOpacity > 0 || cornerHandlesOpacity > 0) {
     // Calculate actual rectangle position and size
     let drawX, drawY, drawW, drawH;
 
@@ -861,16 +904,20 @@ function renderScene(t) {
       drawH = rectCurrentBounds.h;
     }
 
-    // Draw rectangle with consistent stroke
-    push();
-    noFill();
-    stroke(58, 141, 237, rectOpacity * 255); // #3A8DED
-    strokeWeight(1);
-    rect(drawX, drawY, drawW, drawH);
-    pop();
+    // Draw rectangle with consistent stroke (if visible)
+    if (rectOpacity > 0) {
+      push();
+      noFill();
+      stroke(58, 141, 237, rectOpacity * 255); // #3A8DED
+      strokeWeight(1);
+      rect(drawX, drawY, drawW, drawH);
+      pop();
+    }
 
-    // Draw corner dots and handles (always circular)
-    drawCornerElements(rectOpacity, drawX, drawY, drawW, drawH);
+    // Draw corner dots and handles (separate opacities)
+    if (cornerDotsOpacity > 0 || cornerHandlesOpacity > 0) {
+      drawCornerElements(cornerDotsOpacity, cornerHandlesOpacity, drawX, drawY, drawW, drawH);
+    }
   }
   
   // Draw Phase 2 tangent dots (on 2026, so use 2026 scale, with stroke)
@@ -888,7 +935,7 @@ function renderScene(t) {
   }
 }
 
-function drawCornerElements(opacity, x, y, w, h) {
+function drawCornerElements(dotsOpacity, handlesOpacity, x, y, w, h) {
   // Calculate corners based on actual drawn rectangle
   const corners = {
     topLeft: { x: x, y: y },
@@ -899,63 +946,70 @@ function drawCornerElements(opacity, x, y, w, h) {
 
   const blueColor = [58, 141, 237]; // #3A8DED
 
-  // Draw corner handles (small rectangles)
-  push();
-  fill(blueColor[0], blueColor[1], blueColor[2], opacity * 255);
-  noStroke();
-  for (const handle of cornerHandles) {
-    const corner = corners[handle.corner];
-    if (handle.corner === 'topLeft') {
-      rect(corner.x, corner.y, handle.w, handle.h);
-    } else if (handle.corner === 'topRight') {
-      rect(corner.x - handle.w, corner.y, handle.w, handle.h);
-    } else if (handle.corner === 'bottomLeft') {
-      rect(corner.x, corner.y - handle.h, handle.w, handle.h);
-    } else if (handle.corner === 'bottomRight') {
-      rect(corner.x - handle.w, corner.y - handle.h, handle.w, handle.h);
-    }
-  }
-  pop();
-
-  // Draw corner dots (always circular)
-  for (const dot of cornerDots) {
-    const corner = corners[dot.corner];
-    let dotX = corner.x;
-    let dotY = corner.y;
-
-    // Offset dots from corner
-    if (dot.corner === 'topLeft') {
-      dotX += dot.offset;
-      dotY += dot.offset;
-    } else if (dot.corner === 'topRight') {
-      dotX -= dot.offset;
-      dotY += dot.offset;
-    } else if (dot.corner === 'bottomLeft') {
-      dotX += dot.offset;
-      dotY -= dot.offset;
-    } else if (dot.corner === 'bottomRight') {
-      dotX -= dot.offset;
-      dotY -= dot.offset;
-    }
-
+  // Draw corner handles (small rectangles) - fade out with rectangle
+  if (handlesOpacity > 0) {
     push();
-    // Outer circle (stroke only)
-    noFill();
-    stroke(blueColor[0], blueColor[1], blueColor[2], opacity * 255);
-    strokeWeight(1);
-    circle(dotX, dotY, dot.outerR * 2);
-
-    // Inner circle (filled)
-    fill(blueColor[0], blueColor[1], blueColor[2], opacity * 255);
+    fill(blueColor[0], blueColor[1], blueColor[2], handlesOpacity * 255);
     noStroke();
-    circle(dotX, dotY, dot.innerR * 2);
+    for (const handle of cornerHandles) {
+      const corner = corners[handle.corner];
+      if (handle.corner === 'topLeft') {
+        rect(corner.x, corner.y, handle.w, handle.h);
+      } else if (handle.corner === 'topRight') {
+        rect(corner.x - handle.w, corner.y, handle.w, handle.h);
+      } else if (handle.corner === 'bottomLeft') {
+        rect(corner.x, corner.y - handle.h, handle.w, handle.h);
+      } else if (handle.corner === 'bottomRight') {
+        rect(corner.x - handle.w, corner.y - handle.h, handle.w, handle.h);
+      }
+    }
     pop();
+  }
+
+  // Draw corner dots (always circular) - stay visible
+  if (dotsOpacity > 0) {
+    for (const dot of cornerDots) {
+      const corner = corners[dot.corner];
+      let dotX = corner.x;
+      let dotY = corner.y;
+
+      // Offset dots from corner
+      if (dot.corner === 'topLeft') {
+        dotX += dot.offset;
+        dotY += dot.offset;
+      } else if (dot.corner === 'topRight') {
+        dotX -= dot.offset;
+        dotY += dot.offset;
+      } else if (dot.corner === 'bottomLeft') {
+        dotX += dot.offset;
+        dotY -= dot.offset;
+      } else if (dot.corner === 'bottomRight') {
+        dotX -= dot.offset;
+        dotY -= dot.offset;
+      }
+
+      push();
+      // Outer circle (stroke only)
+      noFill();
+      stroke(blueColor[0], blueColor[1], blueColor[2], dotsOpacity * 255);
+      strokeWeight(1);
+      circle(dotX, dotY, dot.outerR * 2);
+
+      // Inner circle (filled)
+      fill(blueColor[0], blueColor[1], blueColor[2], dotsOpacity * 255);
+      noStroke();
+      circle(dotX, dotY, dot.innerR * 2);
+      pop();
+    }
   }
 }
 
-function drawDots(dots, scale = 1, maxScale = 1, showStroke = true) {
+function drawDots(dots, globalScale = 1, maxScale = 1, showStroke = true) {
   for (const dot of dots) {
     if (dot.opacity <= 0) continue;
+
+    // Use individual dot scale if available, otherwise use global scale
+    const scale = dot.scale !== undefined ? dot.scale : globalScale;
 
     push();
     fill(DOT_STYLE.fill[0], DOT_STYLE.fill[1], DOT_STYLE.fill[2], dot.opacity * 255);
