@@ -6,11 +6,13 @@ Animated poster for "Times Language 2026" exhibition. Five-phase animation syste
 ## Files Structure
 ```
 p5js/
-├── index.html          # Entry point
-├── sketch.js           # Main animation (complete 5-phase system)
-├── export-poster.js    # Utility to export poster as PNG
-├── export.html         # Export utility page
-└── [assets]            # Required images (see below)
+├── index.html             # Entry point (standard animation)
+├── sketch.js              # Main animation (complete 5-phase system)
+├── interactive.html       # Interactive version with control panel
+├── sketch-interactive.js  # Interactive animation with real-time parameter control
+├── export-poster.js       # Utility to export poster as PNG
+├── export.html            # Export utility page
+└── [assets]               # Required images (see below)
 
 tools/
 ├── extract-final.mjs   # Figma circle extractor
@@ -104,6 +106,8 @@ Each dot assigned personality at Phase 5 start (like Conway's Game of Life):
 **Result**: Organic trails, dynamic groupings, dots with "life" - no concentric circles
 
 ## Key Configuration
+
+**Note**: All parameters below are adjustable in real-time via the interactive version (`interactive.html`).
 
 ```javascript
 const TIMELINE = {
@@ -215,11 +219,62 @@ Each dot tracks:
 
 ## How to Run
 
+### Standard Animation
 ```bash
 cd p5js
 npx serve .
-# Open http://localhost:3000
+# Open http://localhost:3000 (index.html)
 ```
+
+### Interactive Version with Control Panel
+```bash
+cd p5js
+npx serve .
+# Open http://localhost:3000/interactive.html
+```
+
+The interactive version includes:
+- **Real-time parameter control** for all animation variables
+- **Playback controls**: Play/Pause, Reset
+- **Scene navigation**: Jump directly to any of the 5 phases
+- **Collapsible control sections** organized by phase
+- **Regenerate buttons** to apply structural changes (dot sampling, personalities)
+- **Live time/phase display**
+
+### Interactive Controls by Phase
+
+**Phase 1: The Breath**
+- Rectangle & text grow scales
+- Inhale, hold, exhale, release, and ghost fade durations
+
+**Phase 2: The Constellation**
+- Appearance duration
+- Dot radius, tangent threshold
+- Sampling spacing (density control)
+- Regenerate button for new dot patterns
+
+**Phase 3: The Infusion**
+- Fill duration
+- Fill density for 2026 and other text
+- Dot radius
+- Sampling spacing for 2026 and other text
+- Regenerate button for new dot patterns
+
+**Phase 4: The Bloom**
+- Growth duration
+- 2026 and other dot growth scales
+- Stroke growth maximum
+
+**Phase 5: Transformation & Emergence**
+- Blue transformation timing and duration
+- Blue dot percentage and shrink factor
+- Float speed and damping
+- Kinship radius and crowding threshold
+- Personality distribution (leader/follower/loner/wanderer percentages)
+- Personality speed multipliers
+- Social forces (follower attraction, loner repulsion)
+- Text emergence timing
+- Regenerate button for new personality assignments
 
 ## Figma Integration
 
