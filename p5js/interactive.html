@@ -582,37 +582,55 @@
         <div class="control-group">
           <label>Float Damping</label>
           <div class="control-row">
-            <input type="range" id="float-damping" min="0.90" max="0.99" step="0.01" value="0.98">
-            <span class="value-display" id="float-damping-val">0.98</span>
+            <input type="range" id="float-damping" min="0.90" max="0.99" step="0.01" value="0.97">
+            <span class="value-display" id="float-damping-val">0.97</span>
           </div>
           <div class="info">Velocity decay (higher = smoother)</div>
         </div>
 
         <div class="control-group">
-          <label>Wind Strength</label>
+          <label>Large Dot Speed</label>
           <div class="control-row">
-            <input type="range" id="wind-strength" min="0" max="0.3" step="0.01" value="0.08">
-            <span class="value-display" id="wind-strength-val">0.08</span>
+            <input type="range" id="large-dot-speed" min="0.01" max="0.5" step="0.01" value="0.15">
+            <span class="value-display" id="large-dot-speed-val">0.15</span>
           </div>
-          <div class="info">Gentle directional drift (like wind)</div>
+          <div class="info">Brownian motion speed for large dots</div>
         </div>
 
         <div class="control-group">
-          <label>Wind Change Speed</label>
+          <label>Attraction Strength</label>
           <div class="control-row">
-            <input type="range" id="wind-change-speed" min="0" max="0.01" step="0.0001" value="0.001">
-            <span class="value-display" id="wind-change-speed-val">0.001</span>
+            <input type="range" id="attraction-strength" min="0" max="0.1" step="0.005" value="0.03">
+            <span class="value-display" id="attraction-strength-val">0.03</span>
           </div>
-          <div class="info">How slowly wind direction changes</div>
+          <div class="info">Pull toward nearest attraction point</div>
         </div>
 
         <div class="control-group">
-          <label>Turbulence Strength</label>
+          <label>Min Distance (dot radius multiplier)</label>
           <div class="control-row">
-            <input type="range" id="turbulence-strength" min="0" max="0.1" step="0.01" value="0.02">
-            <span class="value-display" id="turbulence-strength-val">0.02</span>
+            <input type="range" id="min-distance" min="0.1" max="5.0" step="0.1" value="0.5">
+            <span class="value-display" id="min-distance-val">0.5x</span>
           </div>
-          <div class="info">Random gusts for organic variation</div>
+          <div class="info">How close dots can get to attraction points</div>
+        </div>
+
+        <div class="control-group">
+          <label>Gust Strength</label>
+          <div class="control-row">
+            <input type="range" id="gust-strength" min="0" max="10" step="0.1" value="5.0">
+            <span class="value-display" id="gust-strength-val">5.0</span>
+          </div>
+          <div class="info">Force to blow dots away when stuck</div>
+        </div>
+
+        <div class="control-group">
+          <label>Gust Frequency</label>
+          <div class="control-row">
+            <input type="range" id="gust-frequency" min="0" max="1.0" step="0.05" value="0.4">
+            <span class="value-display" id="gust-frequency-val">40%</span>
+          </div>
+          <div class="info">Probability of gust per frame</div>
         </div>
 
         <div class="control-group">
@@ -726,9 +744,11 @@
       setupControl('blue-dot-shrink');
       setupControl('base-speed');
       setupControl('float-damping');
-      setupControl('wind-strength');
-      setupControl('wind-change-speed');
-      setupControl('turbulence-strength');
+      setupControl('large-dot-speed');
+      setupControl('attraction-strength');
+      setupControl('min-distance', 'x');
+      setupControl('gust-strength');
+      setupControl('gust-frequency', '%');
       setupControl('speed-var-min');
       setupControl('speed-var-max');
       setupControl('text-emerge-start');

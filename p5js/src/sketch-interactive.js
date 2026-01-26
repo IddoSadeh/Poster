@@ -140,17 +140,25 @@ const BLUE_DOT_SHRINK_2026 = 0.25;  // Not used (2026 dots stay white)
 let BLUE_DOT_SHRINK_OTHER = 0.25;  // Blue dots shrink (now dynamic)
 const WHITE_FADE_RATE = 0.015;  // White bubbles slowly fade/dissipate
 
-// Phase 5: Organic floating like leaves in the wind
+// Phase 5: Organic floating with attraction points
 let BASE_SPEED = 0.12;              // Base Brownian motion for small dots (now dynamic)
-let LARGE_DOT_SPEED = 0.35;         // Slower, gentle movement for large white dots (now dynamic)
-let FLOAT_DAMPING = 0.98;           // High damping for graceful, slow deceleration (now dynamic)
+let LARGE_DOT_SPEED = 0.15;         // Slower Brownian motion for large white dots (now dynamic)
+let FLOAT_DAMPING = 0.97;           // Medium damping for natural deceleration (now dynamic)
 
-// Wind forces - slow, gentle directional drifting
-let WIND_STRENGTH = 0.08;           // Gentle wind force (now dynamic)
-let WIND_CHANGE_SPEED = 0.001;      // How slowly wind direction changes (now dynamic)
-let TURBULENCE_STRENGTH = 0.02;     // Small random gusts (now dynamic)
+// Attraction points - 5 focal points scattered across the canvas
+const ATTRACTION_POINTS = [
+  { x: BASE_W * 0.2, y: BASE_H * 0.25 },   // Top left area
+  { x: BASE_W * 0.8, y: BASE_H * 0.3 },    // Top right area
+  { x: BASE_W * 0.5, y: BASE_H * 0.5 },    // Center
+  { x: BASE_W * 0.3, y: BASE_H * 0.75 },   // Bottom left area
+  { x: BASE_W * 0.75, y: BASE_H * 0.7 }    // Bottom right area
+];
+let ATTRACTION_STRENGTH = 0.03;     // Gentle pull toward nearest point (now dynamic)
+let MIN_DISTANCE_FROM_POINT = 0.5;  // Dots stop at half a dot's radius from points (now dynamic)
+let GUST_STRENGTH = 5.0;            // Very strong gusts to blow dots away (now dynamic)
+let GUST_FREQUENCY = 0.4;           // 40% chance per frame of a gust (now dynamic)
 
-// Speed variation (no social forces - just individual variation)
+// Speed variation (individual variation)
 let SPEED_VARIATION_MIN = 0.7;      // Some dots drift slower (now dynamic)
 let SPEED_VARIATION_MAX = 1.3;      // Some dots drift faster (now dynamic)
 
@@ -344,9 +352,11 @@ function setupParameterListeners() {
     'blue-dot-shrink': (v) => BLUE_DOT_SHRINK_OTHER = v,
     'base-speed': (v) => BASE_SPEED = v,
     'float-damping': (v) => FLOAT_DAMPING = v,
-    'wind-strength': (v) => WIND_STRENGTH = v,
-    'wind-change-speed': (v) => WIND_CHANGE_SPEED = v,
-    'turbulence-strength': (v) => TURBULENCE_STRENGTH = v,
+    'large-dot-speed': (v) => LARGE_DOT_SPEED = v,
+    'attraction-strength': (v) => ATTRACTION_STRENGTH = v,
+    'min-distance': (v) => MIN_DISTANCE_FROM_POINT = v,
+    'gust-strength': (v) => GUST_STRENGTH = v,
+    'gust-frequency': (v) => GUST_FREQUENCY = v,
     'speed-var-min': (v) => SPEED_VARIATION_MIN = v,
     'speed-var-max': (v) => SPEED_VARIATION_MAX = v
   };
@@ -1119,25 +1129,49 @@ function updatePhase5(t) {
     const isSmallWhite = !dot.isLarge && !isBlue;
     const isLargeWhite = dot.isLarge;
 
-    // WIND FORCES: Gentle, slowly changing directional drift (like leaves in wind)
-    // Wind direction changes very slowly using sine waves
-    const windPhase = dot.windPhase || 0;
-    const windAngle = t * WIND_CHANGE_SPEED + windPhase;
-
-    // Primary wind direction (changes slowly)
-    const windX = cos(windAngle) * WIND_STRENGTH;
-    const windY = sin(windAngle * 0.7) * WIND_STRENGTH; // Different frequency for Y creates swirling
-
-    // Small turbulence (random gusts)
-    const gustX = (random() - 0.5) * TURBULENCE_STRENGTH;
-    const gustY = (random() - 0.5) * TURBULENCE_STRENGTH;
-
-    // Apply wind forces to large dots
+    // LARGE DOTS: Brownian motion with attraction points
     if (dot.isLarge) {
       dot.vx = dot.vx || 0;
       dot.vy = dot.vy || 0;
-      dot.vx += windX + gustX;
-      dot.vy += windY + gustY;
+
+      // Find nearest attraction point
+      let nearestPoint = ATTRACTION_POINTS[0];
+      let minDist = dist(dot.x, dot.y, nearestPoint.x, nearestPoint.y);
+      for (const point of ATTRACTION_POINTS) {
+        const d = dist(dot.x, dot.y, point.x, point.y);
+        if (d < minDist) {
+          minDist = d;
+          nearestPoint = point;
+        }
+      }
+
+      // Calculate minimum allowed distance (half the dot's visual radius)
+      const dotVisualRadius = dot.r * dot.scale;
+      const minAllowedDist = dotVisualRadius * MIN_DISTANCE_FROM_POINT;
+
+      // Apply gentle attraction toward nearest point (only if not too close)
+      if (minDist > minAllowedDist) {
+        const dx = nearestPoint.x - dot.x;
+        const dy = nearestPoint.y - dot.y;
+        const angle = Math.atan2(dy, dx);
+        dot.vx += cos(angle) * ATTRACTION_STRENGTH;
+        dot.vy += sin(angle) * ATTRACTION_STRENGTH;
+      }
+
+      // Brownian motion (random jittery movement)
+      const speedMult = dot.speedMultiplier || 1.0;
+      dot.vx += (random() - 0.5) * LARGE_DOT_SPEED * speedMult;
+      dot.vy += (random() - 0.5) * LARGE_DOT_SPEED * speedMult;
+
+      // Occasional strong gusts to blow dots away from attraction points
+      if (random() < GUST_FREQUENCY && minDist < minAllowedDist * 3) {
+        // Blow away from the point
+        const dx = dot.x - nearestPoint.x;
+        const dy = dot.y - nearestPoint.y;
+        const angle = Math.atan2(dy, dx);
+        dot.vx += cos(angle) * GUST_STRENGTH;
+        dot.vy += sin(angle) * GUST_STRENGTH;
+      }
     }
 
     // SMALL DOT SNAKE GAME: Grid-based Markov walk with eating/cutting

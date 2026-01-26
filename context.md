@@ -108,19 +108,26 @@ Smooth metamorphosis with emergent behavior - the ecosystem reveals itself
 2. **Small white bubbles** (from other text): 30% stay white, lose stroke
 3. **Tiny blue dots** (from other text): 70% transform to blue, lose stroke
 
-#### Organic Floating - Like Leaves in the Wind:
-Each dot floats independently with gentle, natural variation:
+#### Organic Floating - Brownian Motion with Attraction Points:
+Each large dot floats with Brownian motion while being gently drawn to focal points:
 
-- **Wind forces**: Slow, directional drifting that changes gradually using sine waves
-  - Wind direction shifts very slowly (0.001 speed) creating gentle swirling patterns
-  - Small turbulence adds random gusts for organic variation
+- **5 Attraction Points**: Scattered across canvas (top-left, top-right, center, bottom-left, bottom-right)
+  - Dots are gently pulled toward nearest point (0.03 attraction strength)
+  - Creates natural clustering tendency without rigid grouping
+- **Minimum Distance**: Dots stop at half a dot's radius from attraction points
+  - Prevents dots from clumping directly on points
+  - Creates organic spacing around focal areas
+- **Brownian Motion**: Random, jittery movement (0.15 speed)
+  - Primary movement style - not directional wind
+  - Creates natural, unpredictable paths
+- **Frequent Gusts**: Very strong random forces (5.0 strength, 40% frequency)
+  - Constantly blows dots away when they get near attraction points
+  - Keeps movement very dynamic and prevents stagnation
 - **Individual speed variation**: Each dot assigned random speed (0.7x - 1.3x)
-  - Creates natural diversity without rigid grouping behaviors
-  - Some dots drift faster, some slower, like real leaves
-- **High damping** (0.98): Graceful, slow deceleration for smooth, flowing movement
-- **No social forces**: Dots don't chase, flee, or interact - pure organic drift
+  - Some dots drift faster, some slower
+- **Medium damping** (0.97): Natural deceleration
 
-**Result**: Gentle, flowing movement that feels natural and calming - like leaves floating on a breeze
+**Result**: Gentle, jittery floating with natural clustering around focal points - dynamic but calm
 
 #### Small Dot Snake Game:
 All small dots (both white and blue) use grid-based Markov walks with eating and cutting mechanics:
@@ -207,15 +214,16 @@ const STROKE_GROW_MAX = 3.5;        // Stroke grows 3.5x at peak
 const BLUE_DOT_PERCENTAGE = 0.7;    // 70% of small dots turn blue
 const BLUE_DOT_SHRINK_OTHER = 0.25; // Blue dots shrink to 25% of small white
 
-// Organic floating (like leaves in the wind)
-const BASE_SPEED = 0.12;            // Base Brownian motion for small dots
-const LARGE_DOT_SPEED = 0.35;       // Slower, gentle movement for large white dots
-const FLOAT_DAMPING = 0.98;         // High damping for graceful, slow deceleration
-const WIND_STRENGTH = 0.08;         // Gentle wind force
-const WIND_CHANGE_SPEED = 0.001;    // How slowly wind direction changes (very slow)
-const TURBULENCE_STRENGTH = 0.02;   // Small random gusts
-const SPEED_VARIATION_MIN = 0.7;    // Some dots drift slower
-const SPEED_VARIATION_MAX = 1.3;    // Some dots drift faster
+// Organic floating (Brownian motion with attraction points)
+const BASE_SPEED = 0.12;               // Base Brownian motion for small dots
+const LARGE_DOT_SPEED = 0.15;          // Brownian motion speed for large white dots
+const FLOAT_DAMPING = 0.97;            // Medium damping for natural deceleration
+const ATTRACTION_STRENGTH = 0.03;      // Gentle pull toward nearest attraction point
+const MIN_DISTANCE_FROM_POINT = 0.5;   // Dots stop at half a dot's radius from points
+const GUST_STRENGTH = 5.0;             // Very strong gusts to blow dots away
+const GUST_FREQUENCY = 0.4;            // 40% chance per frame of a gust
+const SPEED_VARIATION_MIN = 0.7;       // Some dots drift slower
+const SPEED_VARIATION_MAX = 1.3;       // Some dots drift faster
 
 // Small dot snake game
 const BLUE_DISPERSION_TIME = 3.0;   // Initial explosion/dispersion duration (seconds)
