@@ -28,7 +28,7 @@ tools/
 - `topBlock.svg` - Top right text block
 - `addressBlock.svg` - Address text
 - `bottomLeft.svg` - Bottom left text
-- `text-data.json` - Floating word positions from Figma
+- `text-data.json` - Text content from Figma (broken into random 1-4 char chunks)
 
 ## Environment Variables
 Figma API credentials are stored in `.env` file:
@@ -62,33 +62,34 @@ Stars flickering on a horizon - tangent dots appear on "2026"
 Slow, creeping density - dots gradually fill all elements
 
 - Dots appear on all elements (2026, Times, Language, address, etc.)
-- **Density**: 15% for 2026 (large), 20% for other text (small)
+- **Density**: 45% for 2026 (large), 50% for other text (small)
 - Completely randomized timing over 30 seconds
 - Creates continuous surprise and discovery
 
-### Phase 4: The Bloom (70.0s - 88.0s)
-Ink expanding in water / Popcorn popping
+### Phase 4: The Bloom (70.0s - 89.0s)
+Synchronized expansion - all dots grow together
 
-- **Asynchronous growth**: Each dot grows at its own pace (18s)
+- **Wait period** (70.0s - 71.0s): All dots fully generated, pause before growth
+- **Synchronized growth** (71.0s - 89.0s): All dots grow together in unison (18s)
 - **Large bubbles** (2026): grow 13x original size
 - **Small bubbles** (other text): grow 5x original size
 - Stroke weight scales from 1.2x to 3.5x as dots expand
-- Wave-like effect, peak saturation
+- Unified bloom effect, peak saturation
 
-### Phase 5: Transformation & Emergence (88.0s+)
+### Phase 5: Transformation & Emergence (89.0s+)
 Smooth metamorphosis with emergent behavior - the ecosystem reveals itself
 
 #### Visual Transformations (smooth, no popping):
-- **Poster fade** (88.0s): Original graphics fade out instantly
-- **Floating starts** (88.0s+): All dots begin Brownian motion with personalities
-- **Blue transformation** (96.0s - 108.0s):
+- **Poster fade** (89.0s): Original graphics fade out instantly
+- **Floating starts** (89.0s+): All dots begin Brownian motion with personalities
+- **Blue transformation** (97.0s - 109.0s):
   - 70% of small dots smoothly transition white → blue (12s)
   - Smooth color interpolation (no popping)
   - Blue dots shrink to 25% of small white size
-- **Stroke fade** (100.0s - 115.0s):
+- **Stroke fade** (101.0s - 116.0s):
   - ALL dots gradually lose blue outlines (15s)
   - Final state: pure white and pure blue (no strokes)
-- **Text emerges** (96.0s - 104.0s): Background text layer fades in (8s)
+- **Text emerges** (97.0s - 105.0s): Background text layer fades in (8s)
 
 #### Three Distinct Bubble Sizes:
 1. **Large white bubbles** (from 2026): Always stay white, lose stroke
@@ -104,6 +105,15 @@ Each dot assigned personality at Phase 5 start (like Conway's Game of Life):
 - **35% Wanderers** (0.9x speed): Ignore everyone, drift randomly
 
 **Result**: Organic trails, dynamic groupings, dots with "life" - no concentric circles
+
+#### Floating Text Layer:
+Background text broken into 1-4 character chunks, randomly scattered across canvas:
+
+- **Random positioning**: Chunks placed randomly across entire screen (not at original Figma positions)
+- Text rendered **underneath bubbles** (z-index: below dots)
+- Sometimes hidden when bubbles pass over
+- Creates layered depth effect with fragmented, scattered text
+- Chunks drift independently with minimal Brownian motion
 
 ## Key Configuration
 
@@ -126,9 +136,10 @@ const TIMELINE = {
   gradualFill: 30.0,
 
   phase4Start: 70.0,
+  dotsGrowStartDelay: 1.0,
   dotsGrow: 18.0,
 
-  phase5Start: 88.0,
+  phase5Start: 89.0,
   blueTransformStart: 8.0,
   blueTransformDuration: 12.0,
   strokeFadeStart: 12.0,
@@ -140,8 +151,8 @@ const TIMELINE = {
 };
 
 // Dot density
-const FILL_TARGET = 0.15;           // 15% fill for 2026 (large bubbles)
-const FILL_TARGET_SMALL = 0.2;      // 20% fill for small text
+const FILL_TARGET = 0.45;           // 45% fill for 2026 (large bubbles)
+const FILL_TARGET_SMALL = 0.5;      // 50% fill for small text
 const TANGENT_DOT_RADIUS = 3;       // Same as fill dots (uniform size)
 const FILL_DOT_RADIUS = 3;
 
@@ -167,15 +178,15 @@ const CROWDING_THRESHOLD = 8;       // Too many neighbors = crowded
 
 ```javascript
 // Edge sampling spacing (pixels between dots)
-allEdges.numbers2026 = sampleEdges(..., 25);      // Very few large dots
-allEdges.times = sampleEdges(..., 6);             // Moderate small dots
-allEdges.language = sampleEdges(..., 6);
-allEdges.address = sampleEdges(..., 6);
-allEdges.topBlock = sampleEdges(..., 6);
-allEdges.bottomLeft = sampleEdges(..., 6);
+allEdges.numbers2026 = sampleEdges(..., 15);      // Moderate spacing for dense coverage
+allEdges.times = sampleEdges(..., 4);             // Tight spacing for high density
+allEdges.language = sampleEdges(..., 4);
+allEdges.address = sampleEdges(..., 4);
+allEdges.topBlock = sampleEdges(..., 4);
+allEdges.bottomLeft = sampleEdges(..., 4);
 
 // Tangent detection
-const spacing = 25;  // Check every 25 pixels (fewer tangent dots)
+const spacing = 15;  // Check every 15 pixels (moderate tangent dot density)
 ```
 
 ## Technical Implementation
@@ -195,11 +206,11 @@ const EDGE_THRESHOLDS = {
 2. **Dynamic Text Rendering**: Times/Language rendered every frame for smooth scaling
 3. **Edge Tracing**: Scans image pixels for alpha transitions
 4. **Asynchronous Appearance**: Each dot has individual `delay` property
-5. **Asynchronous Growth**: Each dot has individual `scale` and `growthDelay`
+5. **Synchronous Growth**: All dots grow together in unison (no individual delays)
 6. **Smooth Transformations**: Color interpolation (white → blue), no popping
 7. **Personality System**: Each dot assigned personality for emergent behavior
 8. **Screen Wrapping**: Dots wrap around edges for freedom of movement
-9. **Floating Words**: Background text layer from Figma positions
+9. **Floating Text Chunks**: Background text broken into 1-4 character chunks, randomly scattered across screen, rendered beneath bubbles
 
 ### Dot Properties
 Each dot tracks:
