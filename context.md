@@ -108,15 +108,19 @@ Smooth metamorphosis with emergent behavior - the ecosystem reveals itself
 2. **Small white bubbles** (from other text): 30% stay white, lose stroke
 3. **Tiny blue dots** (from other text): 70% transform to blue, lose stroke
 
-#### Emergent Behavior - Dot Personalities:
-Each dot assigned personality at Phase 5 start (like Conway's Game of Life):
+#### Organic Floating - Like Leaves in the Wind:
+Each dot floats independently with gentle, natural variation:
 
-- **15% Leaders** (1.8x speed): Move fast, ignore others, blaze trails
-- **30% Followers** (1.0x speed): Attracted to nearby leaders, create streams
-- **20% Loners** (1.2x speed): Repelled when crowded (>8 neighbors), prevent blobs
-- **35% Wanderers** (0.9x speed): Ignore everyone, drift randomly
+- **Wind forces**: Slow, directional drifting that changes gradually using sine waves
+  - Wind direction shifts very slowly (0.001 speed) creating gentle swirling patterns
+  - Small turbulence adds random gusts for organic variation
+- **Individual speed variation**: Each dot assigned random speed (0.7x - 1.3x)
+  - Creates natural diversity without rigid grouping behaviors
+  - Some dots drift faster, some slower, like real leaves
+- **High damping** (0.98): Graceful, slow deceleration for smooth, flowing movement
+- **No social forces**: Dots don't chase, flee, or interact - pure organic drift
 
-**Result**: Organic trails, dynamic groupings, dots with "life" - no concentric circles
+**Result**: Gentle, flowing movement that feels natural and calming - like leaves floating on a breeze
 
 #### Small Dot Snake Game:
 All small dots (both white and blue) use grid-based Markov walks with eating and cutting mechanics:
@@ -203,15 +207,15 @@ const STROKE_GROW_MAX = 3.5;        // Stroke grows 3.5x at peak
 const BLUE_DOT_PERCENTAGE = 0.7;    // 70% of small dots turn blue
 const BLUE_DOT_SHRINK_OTHER = 0.25; // Blue dots shrink to 25% of small white
 
-// Emergent behavior
+// Organic floating (like leaves in the wind)
 const BASE_SPEED = 0.12;            // Base Brownian motion for small dots
-const LARGE_DOT_SPEED = 1.2;        // Much faster, fluid Brownian motion for large white dots
-const FLOAT_DAMPING = 0.95;         // Less damping for more fluid movement
-const KINSHIP_RADIUS = 100;         // How far dots "feel" their kin
-const LEADER_SPEED = 1.8;           // Leaders move 1.8x faster
-const FOLLOWER_ATTRACT = 0.025;     // Followers attracted to leaders
-const LONER_REPEL = 0.04;           // Loners repelled when crowded
-const CROWDING_THRESHOLD = 8;       // Too many neighbors = crowded
+const LARGE_DOT_SPEED = 0.35;       // Slower, gentle movement for large white dots
+const FLOAT_DAMPING = 0.98;         // High damping for graceful, slow deceleration
+const WIND_STRENGTH = 0.08;         // Gentle wind force
+const WIND_CHANGE_SPEED = 0.001;    // How slowly wind direction changes (very slow)
+const TURBULENCE_STRENGTH = 0.02;   // Small random gusts
+const SPEED_VARIATION_MIN = 0.7;    // Some dots drift slower
+const SPEED_VARIATION_MAX = 1.3;    // Some dots drift faster
 
 // Small dot snake game
 const BLUE_DISPERSION_TIME = 3.0;   // Initial explosion/dispersion duration (seconds)
@@ -257,7 +261,7 @@ const EDGE_THRESHOLDS = {
 4. **Asynchronous Appearance**: Each dot has individual `delay` property
 5. **Synchronous Growth**: All dots grow together in unison (no individual delays)
 6. **Smooth Transformations**: Color interpolation (white → blue), no popping
-7. **Personality System**: Each dot assigned personality for emergent behavior
+7. **Organic Floating**: Wind forces and speed variation for natural, leaf-like movement
 8. **Screen Wrapping**: Dots wrap around edges for freedom of movement
 9. **Floating Text Chunks**: Background text broken into 1-4 character chunks, randomly scattered across screen, rendered beneath bubbles
 
@@ -273,8 +277,8 @@ Each dot tracks:
 - `isLarge` - true for 2026 dots, false for others
 - `transformProgress` - Color transition progress (0-1)
 - `strokeOpacity` - Stroke visibility (0-1)
-- `personality` - 'leader', 'follower', 'loner', 'wanderer'
-- `speedMultiplier` - Movement speed multiplier
+- `speedMultiplier` - Random speed variation (0.7 - 1.3x)
+- `windPhase` - Phase offset for wind response (creates variation)
 - `vx, vy` - Velocity (Phase 5)
 
 ## How to Run
@@ -359,10 +363,11 @@ node extract-text.mjs         # Extract text positions
 - Small white (supporting layer)
 - Tiny blue (detail/texture)
 
-**Emergence**: Simple personality rules create complex patterns
-- No concentric circles or uniform blobs
-- Organic trails and dynamic groupings
-- Dots with "life" - temporary formations that form and dissolve
+**Organic Movement**: Natural, wind-driven floating creates calm, flowing patterns
+- Gentle drift like leaves on a breeze
+- Individual speed variation creates natural diversity
+- Slow wind direction changes produce graceful, swirling motion
+- No rigid behaviors - pure organic flow
 
 **Smooth Transitions**: Everything transforms gradually
 - No popping or disappearing

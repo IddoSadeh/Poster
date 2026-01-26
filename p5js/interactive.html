@@ -582,106 +582,60 @@
         <div class="control-group">
           <label>Float Damping</label>
           <div class="control-row">
-            <input type="range" id="float-damping" min="0.90" max="0.99" step="0.01" value="0.97">
-            <span class="value-display" id="float-damping-val">0.97</span>
+            <input type="range" id="float-damping" min="0.90" max="0.99" step="0.01" value="0.98">
+            <span class="value-display" id="float-damping-val">0.98</span>
           </div>
           <div class="info">Velocity decay (higher = smoother)</div>
         </div>
 
         <div class="control-group">
-          <label>Leader Speed Multiplier</label>
+          <label>Wind Strength</label>
           <div class="control-row">
-            <input type="range" id="leader-speed" min="1" max="3" step="0.1" value="1.8">
-            <span class="value-display" id="leader-speed-val">1.8x</span>
+            <input type="range" id="wind-strength" min="0" max="0.3" step="0.01" value="0.08">
+            <span class="value-display" id="wind-strength-val">0.08</span>
           </div>
+          <div class="info">Gentle directional drift (like wind)</div>
         </div>
 
         <div class="control-group">
-          <label>Follower Attract Force</label>
+          <label>Wind Change Speed</label>
           <div class="control-row">
-            <input type="range" id="follower-attract" min="0" max="0.1" step="0.005" value="0.025">
-            <span class="value-display" id="follower-attract-val">0.025</span>
+            <input type="range" id="wind-change-speed" min="0" max="0.01" step="0.0001" value="0.001">
+            <span class="value-display" id="wind-change-speed-val">0.001</span>
           </div>
+          <div class="info">How slowly wind direction changes</div>
         </div>
 
         <div class="control-group">
-          <label>Loner Repel Force</label>
+          <label>Turbulence Strength</label>
           <div class="control-row">
-            <input type="range" id="loner-repel" min="0" max="0.15" step="0.005" value="0.04">
-            <span class="value-display" id="loner-repel-val">0.04</span>
+            <input type="range" id="turbulence-strength" min="0" max="0.1" step="0.01" value="0.02">
+            <span class="value-display" id="turbulence-strength-val">0.02</span>
           </div>
+          <div class="info">Random gusts for organic variation</div>
         </div>
 
         <div class="control-group">
-          <label>Kinship Radius (px)</label>
+          <label>Speed Variation Min</label>
           <div class="control-row">
-            <input type="range" id="kinship-radius" min="20" max="300" step="10" value="100">
-            <span class="value-display" id="kinship-radius-val">100</span>
+            <input type="range" id="speed-var-min" min="0.3" max="1.0" step="0.05" value="0.7">
+            <span class="value-display" id="speed-var-min-val">0.7</span>
           </div>
-          <div class="info">How far dots "feel" their neighbors</div>
+          <div class="info">Slowest dots drift at this speed</div>
         </div>
 
         <div class="control-group">
-          <label>Crowding Threshold</label>
+          <label>Speed Variation Max</label>
           <div class="control-row">
-            <input type="range" id="crowding-threshold" min="2" max="20" step="1" value="8">
-            <span class="value-display" id="crowding-threshold-val">8</span>
+            <input type="range" id="speed-var-max" min="1.0" max="2.0" step="0.05" value="1.3">
+            <span class="value-display" id="speed-var-max-val">1.3</span>
           </div>
-          <div class="info">Too many neighbors = crowded (loners repel)</div>
+          <div class="info">Fastest dots drift at this speed</div>
         </div>
 
         <div class="control-group">
-          <label>Leader Percentage (%)</label>
-          <div class="control-row">
-            <input type="range" id="leader-percent" min="0" max="0.5" step="0.05" value="0.15">
-            <span class="value-display" id="leader-percent-val">15%</span>
-          </div>
-        </div>
-
-        <div class="control-group">
-          <label>Follower Percentage (%)</label>
-          <div class="control-row">
-            <input type="range" id="follower-percent" min="0" max="0.5" step="0.05" value="0.30">
-            <span class="value-display" id="follower-percent-val">30%</span>
-          </div>
-        </div>
-
-        <div class="control-group">
-          <label>Loner Percentage (%)</label>
-          <div class="control-row">
-            <input type="range" id="loner-percent" min="0" max="0.5" step="0.05" value="0.20">
-            <span class="value-display" id="loner-percent-val">20%</span>
-          </div>
-          <div class="info">Wanderer % = 100% - (Leader + Follower + Loner)</div>
-        </div>
-
-        <div class="control-group">
-          <label>Follower Speed Multiplier</label>
-          <div class="control-row">
-            <input type="range" id="follower-speed" min="0.5" max="2" step="0.1" value="1.0">
-            <span class="value-display" id="follower-speed-val">1.0x</span>
-          </div>
-        </div>
-
-        <div class="control-group">
-          <label>Loner Speed Multiplier</label>
-          <div class="control-row">
-            <input type="range" id="loner-speed" min="0.5" max="2" step="0.1" value="1.2">
-            <span class="value-display" id="loner-speed-val">1.2x</span>
-          </div>
-        </div>
-
-        <div class="control-group">
-          <label>Wanderer Speed Multiplier</label>
-          <div class="control-row">
-            <input type="range" id="wanderer-speed" min="0.5" max="2" step="0.1" value="0.9">
-            <span class="value-display" id="wanderer-speed-val">0.9x</span>
-          </div>
-        </div>
-
-        <div class="control-group">
-          <button id="regenerate-phase5" style="width: 100%;">Regenerate Phase 5 Personalities</button>
-          <div class="info">Click to reassign personalities with new percentages</div>
+          <button id="regenerate-phase5" style="width: 100%;">Regenerate Phase 5 Speed Variation</button>
+          <div class="info">Click to reassign random speed variations</div>
         </div>
 
         <div class="control-group">
@@ -772,17 +726,11 @@
       setupControl('blue-dot-shrink');
       setupControl('base-speed');
       setupControl('float-damping');
-      setupControl('leader-speed', 'x');
-      setupControl('follower-attract');
-      setupControl('loner-repel');
-      setupControl('kinship-radius');
-      setupControl('crowding-threshold');
-      setupControl('leader-percent', '%');
-      setupControl('follower-percent', '%');
-      setupControl('loner-percent', '%');
-      setupControl('follower-speed', 'x');
-      setupControl('loner-speed', 'x');
-      setupControl('wanderer-speed', 'x');
+      setupControl('wind-strength');
+      setupControl('wind-change-speed');
+      setupControl('turbulence-strength');
+      setupControl('speed-var-min');
+      setupControl('speed-var-max');
       setupControl('text-emerge-start');
       setupControl('text-emerge-duration');
     });

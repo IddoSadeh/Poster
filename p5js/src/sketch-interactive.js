@@ -140,27 +140,19 @@ const BLUE_DOT_SHRINK_2026 = 0.25;  // Not used (2026 dots stay white)
 let BLUE_DOT_SHRINK_OTHER = 0.25;  // Blue dots shrink (now dynamic)
 const WHITE_FADE_RATE = 0.015;  // White bubbles slowly fade/dissipate
 
-// Phase 5: Emergent behavior - dots have personalities
+// Phase 5: Organic floating like leaves in the wind
 let BASE_SPEED = 0.12;              // Base Brownian motion for small dots (now dynamic)
-let LARGE_DOT_SPEED = 1.2;          // Much faster, more fluid movement for large white dots (now dynamic)
-let FLOAT_DAMPING = 0.95;           // Less damping for more fluid movement (now dynamic)
-let KINSHIP_RADIUS = 100;           // How far dots "feel" their kin (now dynamic)
-let CROWDING_THRESHOLD = 8;         // Too many neighbors = crowded (now dynamic)
+let LARGE_DOT_SPEED = 0.35;         // Slower, gentle movement for large white dots (now dynamic)
+let FLOAT_DAMPING = 0.98;           // High damping for graceful, slow deceleration (now dynamic)
 
-// Personality distribution (percentages)
-let LEADER_PERCENT = 0.15;          // 15% leaders (now dynamic)
-let FOLLOWER_PERCENT = 0.30;        // 30% followers (now dynamic)
-let LONER_PERCENT = 0.20;           // 20% loners (now dynamic)
-// Wanderer percent = 1 - (leader + follower + loner)
+// Wind forces - slow, gentle directional drifting
+let WIND_STRENGTH = 0.08;           // Gentle wind force (now dynamic)
+let WIND_CHANGE_SPEED = 0.001;      // How slowly wind direction changes (now dynamic)
+let TURBULENCE_STRENGTH = 0.02;     // Small random gusts (now dynamic)
 
-// Personality forces and speeds
-let LEADER_SPEED = 1.8;             // Leaders move faster (now dynamic)
-let FOLLOWER_SPEED = 1.0;           // Followers normal speed (now dynamic)
-let FOLLOWER_ATTRACT = 0.025;       // Followers attracted to kin (now dynamic)
-let LONER_SPEED = 1.2;              // Loners move faster (now dynamic)
-let LONER_REPEL = 0.04;             // Loners repelled when crowded (now dynamic)
-let WANDERER_SPEED = 0.9;           // Wanderers slower (now dynamic)
-const WANDERER_IGNORE = 0.0;        // Wanderers ignore others
+// Speed variation (no social forces - just individual variation)
+let SPEED_VARIATION_MIN = 0.7;      // Some dots drift slower (now dynamic)
+let SPEED_VARIATION_MAX = 1.3;      // Some dots drift faster (now dynamic)
 
 // Blue dot snake behavior - Grid-based Markov walk with eating/cutting
 let BLUE_DISPERSION_TIME = 3.0;     // Initial explosion/dispersion time (seconds) (now dynamic)
@@ -352,17 +344,11 @@ function setupParameterListeners() {
     'blue-dot-shrink': (v) => BLUE_DOT_SHRINK_OTHER = v,
     'base-speed': (v) => BASE_SPEED = v,
     'float-damping': (v) => FLOAT_DAMPING = v,
-    'kinship-radius': (v) => KINSHIP_RADIUS = v,
-    'crowding-threshold': (v) => CROWDING_THRESHOLD = v,
-    'leader-percent': (v) => LEADER_PERCENT = v,
-    'follower-percent': (v) => FOLLOWER_PERCENT = v,
-    'loner-percent': (v) => LONER_PERCENT = v,
-    'leader-speed': (v) => LEADER_SPEED = v,
-    'follower-speed': (v) => FOLLOWER_SPEED = v,
-    'loner-speed': (v) => LONER_SPEED = v,
-    'wanderer-speed': (v) => WANDERER_SPEED = v,
-    'follower-attract': (v) => FOLLOWER_ATTRACT = v,
-    'loner-repel': (v) => LONER_REPEL = v
+    'wind-strength': (v) => WIND_STRENGTH = v,
+    'wind-change-speed': (v) => WIND_CHANGE_SPEED = v,
+    'turbulence-strength': (v) => TURBULENCE_STRENGTH = v,
+    'speed-var-min': (v) => SPEED_VARIATION_MIN = v,
+    'speed-var-max': (v) => SPEED_VARIATION_MAX = v
   };
 
   Object.keys(controls).forEach(id => {
@@ -698,29 +684,11 @@ function initPhase5() {
 
 // Assign personality to each dot (like Conway's Game of Life - simple rules, complex behavior)
 function assignPersonality(dot) {
-  const roll = Math.random();
+  // Each dot drifts at a slightly different speed - creates natural variation
+  dot.speedMultiplier = random(SPEED_VARIATION_MIN, SPEED_VARIATION_MAX);
 
-  const leaderThreshold = LEADER_PERCENT;
-  const followerThreshold = LEADER_PERCENT + FOLLOWER_PERCENT;
-  const lonerThreshold = LEADER_PERCENT + FOLLOWER_PERCENT + LONER_PERCENT;
-
-  if (roll < leaderThreshold) {
-    // Leaders - move fast, others follow them
-    dot.personality = 'leader';
-    dot.speedMultiplier = LEADER_SPEED;
-  } else if (roll < followerThreshold) {
-    // Followers - attracted to nearby kin
-    dot.personality = 'follower';
-    dot.speedMultiplier = FOLLOWER_SPEED;
-  } else if (roll < lonerThreshold) {
-    // Loners - repelled by crowding
-    dot.personality = 'loner';
-    dot.speedMultiplier = LONER_SPEED;
-  } else {
-    // Wanderers - ignore others, just drift
-    dot.personality = 'wanderer';
-    dot.speedMultiplier = WANDERER_SPEED;
-  }
+  // Random phase offset for wind response (so dots don't all move in sync)
+  dot.windPhase = random(0, TWO_PI);
 }
 
 function initFloatingWords() {
@@ -1151,67 +1119,25 @@ function updatePhase5(t) {
     const isSmallWhite = !dot.isLarge && !isBlue;
     const isLargeWhite = dot.isLarge;
 
-    // Find nearby kin (same type)
-    let nearbyKin = [];
-    let nearbyLeaders = [];
+    // WIND FORCES: Gentle, slowly changing directional drift (like leaves in wind)
+    // Wind direction changes very slowly using sine waves
+    const windPhase = dot.windPhase || 0;
+    const windAngle = t * WIND_CHANGE_SPEED + windPhase;
 
-    for (const other of allDots) {
-      if (other === dot) continue;
+    // Primary wind direction (changes slowly)
+    const windX = cos(windAngle) * WIND_STRENGTH;
+    const windY = sin(windAngle * 0.7) * WIND_STRENGTH; // Different frequency for Y creates swirling
 
-      // Check if same type
-      const otherIsBlue = other.fate === 'residue' && other.transformProgress > 0.5;
-      const otherIsSmallWhite = !other.isLarge && !otherIsBlue;
-      const otherIsLargeWhite = other.isLarge;
+    // Small turbulence (random gusts)
+    const gustX = (random() - 0.5) * TURBULENCE_STRENGTH;
+    const gustY = (random() - 0.5) * TURBULENCE_STRENGTH;
 
-      const sameType = (isBlue && otherIsBlue) ||
-                       (isSmallWhite && otherIsSmallWhite) ||
-                       (isLargeWhite && otherIsLargeWhite);
-
-      if (!sameType) continue;
-
-      // Check distance
-      const dx = other.x - dot.x;
-      const dy = other.y - dot.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-
-      if (dist < KINSHIP_RADIUS && dist > 5) {
-        nearbyKin.push({ other, dx, dy, dist });
-        if (other.personality === 'leader') {
-          nearbyLeaders.push({ other, dx, dy, dist });
-        }
-      }
-    }
-
-    // Apply personality-based behavior
-    const personality = dot.personality || 'wanderer';
-
-    if (personality === 'leader') {
-      // Leaders: move confidently, ignore others
-      // Just Brownian motion (no social forces)
-
-    } else if (personality === 'follower' && nearbyLeaders.length > 0) {
-      // Followers: attracted to nearest leader
-      const nearest = nearbyLeaders[0];
-      const force = FOLLOWER_ATTRACT;
-      dot.vx += (nearest.dx / nearest.dist) * force;
-      dot.vy += (nearest.dy / nearest.dist) * force;
-
-    } else if (personality === 'loner' && nearbyKin.length > CROWDING_THRESHOLD) {
-      // Loners: repelled when crowded
-      let repelX = 0, repelY = 0;
-      for (const kin of nearbyKin) {
-        repelX -= kin.dx / kin.dist;
-        repelY -= kin.dy / kin.dist;
-      }
-      const repelMag = Math.sqrt(repelX * repelX + repelY * repelY);
-      if (repelMag > 0) {
-        dot.vx += (repelX / repelMag) * LONER_REPEL;
-        dot.vy += (repelY / repelMag) * LONER_REPEL;
-      }
-
-    } else if (personality === 'wanderer') {
-      // Wanderers: ignore others, just drift
-      // Just Brownian motion
+    // Apply wind forces to large dots
+    if (dot.isLarge) {
+      dot.vx = dot.vx || 0;
+      dot.vy = dot.vy || 0;
+      dot.vx += windX + gustX;
+      dot.vy += windY + gustY;
     }
 
     // SMALL DOT SNAKE GAME: Grid-based Markov walk with eating/cutting
