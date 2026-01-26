@@ -6,29 +6,40 @@ Animated poster for "Times Language 2026" exhibition. Five-phase animation syste
 ## Files Structure
 ```
 p5js/
-├── index.html             # Entry point (standard animation)
-├── sketch.js              # Main animation (complete 5-phase system)
-├── interactive.html       # Interactive version with control panel
-├── sketch-interactive.js  # Interactive animation with real-time parameter control
-├── export-poster.js       # Utility to export poster as PNG
-├── export.html            # Export utility page
-└── [assets]               # Required images (see below)
+├── index.html                      # Entry point (standard animation)
+├── interactive.html                # Interactive version with control panel
+├── src/
+│   ├── sketch.js                   # Main animation (complete 5-phase system)
+│   └── sketch-interactive.js       # Interactive animation with real-time parameter control
+├── export/
+│   ├── export.html                 # Export utility page
+│   └── export-poster.js            # Utility to export poster as PNG
+└── assets/
+    ├── images/
+    │   ├── 2026.png                # Large "2026" numbers with glow
+    │   ├── Times.png               # "Times" title
+    │   └── Language.png            # "Language" title
+    ├── svg/
+    │   ├── top-block.svg           # Top right text block
+    │   ├── address-block.svg       # Address text
+    │   ├── bottom-left.svg         # Bottom left text
+    │   └── rectangle-lines.svg     # Rectangle lines
+    └── data/
+        └── text-data.json          # Text content from Figma (broken into random 1-4 char chunks)
 
 tools/
-├── extract-final.mjs   # Figma circle extractor
-├── extract-text.mjs    # Figma text position extractor
-├── inspect-frames.mjs  # Figma frame inspection tool
-└── analyze-frames-10-13.mjs  # Frame analysis for Phase 5
+├── extract-final.mjs               # Figma circle extractor
+├── extract-text.mjs                # Figma text position extractor
+├── inspect-frames.mjs              # Figma frame inspection tool
+├── analyze-frames-10-13.mjs        # Frame analysis for Phase 5
+└── frames-10-15.json               # Frame analysis data
 ```
 
 ## Required Assets
-- `2026.png` - Large "2026" numbers with glow
-- `Times.png` - "Times" title
-- `Language.png` - "Language" title
-- `topBlock.svg` - Top right text block
-- `addressBlock.svg` - Address text
-- `bottomLeft.svg` - Bottom left text
-- `text-data.json` - Text content from Figma (broken into random 1-4 char chunks)
+All assets are now organized in the `p5js/assets/` directory:
+- **Images** (`assets/images/`): 2026.png, Times.png, Language.png
+- **SVG** (`assets/svg/`): top-block.svg, address-block.svg, bottom-left.svg, rectangle-lines.svg
+- **Data** (`assets/data/`): text-data.json (text content from Figma, broken into random 1-4 char chunks)
 
 ## Environment Variables
 Figma API credentials are stored in `.env` file:

@@ -243,14 +243,14 @@ let allEdges = {
 let systemReady = false;
 
 function preload() {
-  numbersImg = loadImage("2026.png");
-  topSVG     = loadImage("topBlock.svg");
-  addrSVG    = loadImage("addressBlock.svg");
-  botLSVG    = loadImage("bottomLeft.svg");
-  timesImg   = loadImage("Times.png");
-  langImg    = loadImage("Language.png");
-  rectangleLinesSVG = loadImage("rectangle-lines.svg");
-  textData = loadJSON("text-data.json");  // Load exact text positions from Figma
+  numbersImg = loadImage("assets/images/2026.png");
+  topSVG     = loadImage("assets/svg/top-block.svg");
+  addrSVG    = loadImage("assets/svg/address-block.svg");
+  botLSVG    = loadImage("assets/svg/bottom-left.svg");
+  timesImg   = loadImage("assets/images/Times.png");
+  langImg    = loadImage("assets/images/Language.png");
+  rectangleLinesSVG = loadImage("assets/svg/rectangle-lines.svg");
+  textData = loadJSON("assets/data/text-data.json");  // Load exact text positions from Figma
 }
 
 function setup() {

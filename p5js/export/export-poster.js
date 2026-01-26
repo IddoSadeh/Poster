@@ -28,12 +28,12 @@ const GLOW_BLUR_PX = 35;
 let maskSoft, coverLayer, glowLayer;
 
 function preload() {
-  numbersImg = loadImage("2026.png");
-  topSVG     = loadImage("topBlock.svg");
-  addrSVG    = loadImage("addressBlock.svg");
-  botLSVG    = loadImage("bottomLeft.svg");
-  timesImg   = loadImage("Times.png");
-  langImg    = loadImage("Language.png");
+  numbersImg = loadImage("assets/images/2026.png");
+  topSVG     = loadImage("assets/svg/top-block.svg");
+  addrSVG    = loadImage("assets/svg/address-block.svg");
+  botLSVG    = loadImage("assets/svg/bottom-left.svg");
+  timesImg   = loadImage("assets/images/Times.png");
+  langImg    = loadImage("assets/images/Language.png");
 }
 
 function setup() {
