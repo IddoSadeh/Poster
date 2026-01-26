@@ -108,8 +108,16 @@ Smooth metamorphosis with emergent behavior - the ecosystem reveals itself
 2. **Small white bubbles** (from other text): 30% stay white, lose stroke
 3. **Tiny blue dots** (from other text): 70% transform to blue, lose stroke
 
+#### Initial Dispersion - All Dots Scatter:
+During the first 3 seconds of Phase 5, ALL dots (large and small) explode outward:
+
+- **Dispersion Time**: 3 seconds (BLUE_DISPERSION_TIME)
+- **Very Fast Brownian Motion**: All dots scatter with 20x speed (BLUE_DISPERSION_SPEED)
+- **Purpose**: Spreads dots across entire canvas before they adopt specific behaviors
+- Creates dramatic explosive "scatter bomb" effect at start of Phase 5
+
 #### Organic Floating - Brownian Motion with Attraction Points:
-Each large dot floats with Brownian motion while being gently drawn to focal points:
+After initial dispersion, large dots float with Brownian motion while being gently drawn to focal points:
 
 - **5 Attraction Points**: Scattered across canvas (top-left, top-right, center, bottom-left, bottom-right)
   - Dots are gently pulled toward nearest point (0.03 attraction strength)
@@ -130,11 +138,8 @@ Each large dot floats with Brownian motion while being gently drawn to focal poi
 **Result**: Gentle, jittery floating with natural clustering around focal points - dynamic but calm
 
 #### Small Dot Snake Game:
-All small dots (both white and blue) use grid-based Markov walks with eating and cutting mechanics:
+After initial dispersion, all small dots (both white and blue) use grid-based Markov walks with eating and cutting mechanics:
 
-- **Initial explosion/dispersion** (first 3 seconds of Phase 5):
-  - All small dots disperse across screen with fast Brownian motion (2x speed)
-  - Spreads dots out before snake game begins
 - **Who**: Small white dots (30%) + Small blue dots (70% transform from white)
   - Blue dots smoothly transform from white during Phase 5 (not created separately)
   - Total small dot count remains constant - blue replaces white, doesn't add to it
@@ -225,9 +230,9 @@ const GUST_FREQUENCY = 0.4;            // 40% chance per frame of a gust
 const SPEED_VARIATION_MIN = 0.7;       // Some dots drift slower
 const SPEED_VARIATION_MAX = 1.3;       // Some dots drift faster
 
-// Small dot snake game
+// Initial dispersion (all dots)
 const BLUE_DISPERSION_TIME = 3.0;   // Initial explosion/dispersion duration (seconds)
-const BLUE_DISPERSION_SPEED = 2.0;  // Speed multiplier during dispersion
+const BLUE_DISPERSION_SPEED = 20.0; // Speed multiplier during dispersion (very fast explosion)
 const BLUE_GRID_SIZE = 8;           // Grid cell size for discrete movement
 const BLUE_STEP_INTERVAL = 0.15;    // Time between steps (seconds)
 const BLUE_DIRECTION_CHANGE = 0.15; // Probability of changing direction

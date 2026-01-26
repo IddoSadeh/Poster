@@ -122,7 +122,7 @@ const SPEED_VARIATION_MAX = 1.3;      // Some dots drift faster
 
 // Blue dot snake behavior - Grid-based Markov walk with eating/cutting
 const BLUE_DISPERSION_TIME = 3.0;     // Initial explosion/dispersion time (seconds) before snake game starts
-const BLUE_DISPERSION_SPEED = 2.0;    // Speed multiplier during dispersion
+const BLUE_DISPERSION_SPEED = 20.0;   // Speed multiplier during dispersion (very fast explosion)
 const BLUE_GRID_SIZE = 8;             // Grid cell size for discrete movement
 const BLUE_STEP_INTERVAL = 0.15;      // Time between steps (seconds) - how fast snakes move
 const BLUE_DIRECTION_CHANGE = 0.15;   // Probability of changing direction each step
@@ -927,57 +927,79 @@ function updatePhase5(t) {
     const isSmallWhite = !dot.isLarge && !isBlue;
     const isLargeWhite = dot.isLarge;
 
-    // LARGE DOTS: Brownian motion with attraction points
+    // Check if we're in the initial dispersion phase
+    const inDispersion = timeSinceP5 < BLUE_DISPERSION_TIME;
+
+    // LARGE DOTS:
     if (dot.isLarge) {
       dot.vx = dot.vx || 0;
       dot.vy = dot.vy || 0;
 
-      // Find nearest attraction point
-      let nearestPoint = ATTRACTION_POINTS[0];
-      let minDist = dist(dot.x, dot.y, nearestPoint.x, nearestPoint.y);
-      for (const point of ATTRACTION_POINTS) {
-        const d = dist(dot.x, dot.y, point.x, point.y);
-        if (d < minDist) {
-          minDist = d;
-          nearestPoint = point;
+      if (inDispersion) {
+        // DISPERSION PHASE: All large dots scatter with fast Brownian motion
+        const speedMult = (dot.speedMultiplier || 1.0) * BLUE_DISPERSION_SPEED;
+        dot.vx += (random() - 0.5) * LARGE_DOT_SPEED * speedMult;
+        dot.vy += (random() - 0.5) * LARGE_DOT_SPEED * speedMult;
+
+        // Apply damping
+        dot.vx *= FLOAT_DAMPING;
+        dot.vy *= FLOAT_DAMPING;
+
+        // Update position
+        dot.x += dot.vx;
+        dot.y += dot.vy;
+
+        // Wrap around screen edges
+        if (dot.x < 0) dot.x = BASE_W;
+        if (dot.x > BASE_W) dot.x = 0;
+        if (dot.y < 0) dot.y = BASE_H;
+        if (dot.y > BASE_H) dot.y = 0;
+      } else {
+        // AFTER DISPERSION: Brownian motion with attraction points
+        // Find nearest attraction point
+        let nearestPoint = ATTRACTION_POINTS[0];
+        let minDist = dist(dot.x, dot.y, nearestPoint.x, nearestPoint.y);
+        for (const point of ATTRACTION_POINTS) {
+          const d = dist(dot.x, dot.y, point.x, point.y);
+          if (d < minDist) {
+            minDist = d;
+            nearestPoint = point;
+          }
         }
-      }
 
-      // Calculate minimum allowed distance (half the dot's visual radius)
-      const dotVisualRadius = dot.r * dot.scale;
-      const minAllowedDist = dotVisualRadius * MIN_DISTANCE_FROM_POINT;
+        // Calculate minimum allowed distance (half the dot's visual radius)
+        const dotVisualRadius = dot.r * dot.scale;
+        const minAllowedDist = dotVisualRadius * MIN_DISTANCE_FROM_POINT;
 
-      // Apply gentle attraction toward nearest point (only if not too close)
-      if (minDist > minAllowedDist) {
-        const dx = nearestPoint.x - dot.x;
-        const dy = nearestPoint.y - dot.y;
-        const angle = Math.atan2(dy, dx);
-        dot.vx += cos(angle) * ATTRACTION_STRENGTH;
-        dot.vy += sin(angle) * ATTRACTION_STRENGTH;
-      }
+        // Apply gentle attraction toward nearest point (only if not too close)
+        if (minDist > minAllowedDist) {
+          const dx = nearestPoint.x - dot.x;
+          const dy = nearestPoint.y - dot.y;
+          const angle = Math.atan2(dy, dx);
+          dot.vx += cos(angle) * ATTRACTION_STRENGTH;
+          dot.vy += sin(angle) * ATTRACTION_STRENGTH;
+        }
 
-      // Brownian motion (random jittery movement)
-      const speedMult = dot.speedMultiplier || 1.0;
-      dot.vx += (random() - 0.5) * LARGE_DOT_SPEED * speedMult;
-      dot.vy += (random() - 0.5) * LARGE_DOT_SPEED * speedMult;
+        // Brownian motion (random jittery movement)
+        const speedMult = dot.speedMultiplier || 1.0;
+        dot.vx += (random() - 0.5) * LARGE_DOT_SPEED * speedMult;
+        dot.vy += (random() - 0.5) * LARGE_DOT_SPEED * speedMult;
 
-      // Occasional strong gusts to blow dots away from attraction points
-      if (random() < GUST_FREQUENCY && minDist < minAllowedDist * 3) {
-        // Blow away from the point
-        const dx = dot.x - nearestPoint.x;
-        const dy = dot.y - nearestPoint.y;
-        const angle = Math.atan2(dy, dx);
-        dot.vx += cos(angle) * GUST_STRENGTH;
-        dot.vy += sin(angle) * GUST_STRENGTH;
+        // Occasional strong gusts to blow dots away from attraction points
+        if (random() < GUST_FREQUENCY && minDist < minAllowedDist * 3) {
+          // Blow away from the point
+          const dx = dot.x - nearestPoint.x;
+          const dy = dot.y - nearestPoint.y;
+          const angle = Math.atan2(dy, dx);
+          dot.vx += cos(angle) * GUST_STRENGTH;
+          dot.vy += sin(angle) * GUST_STRENGTH;
+        }
       }
     }
 
     // SMALL DOT SNAKE GAME: Grid-based Markov walk with eating/cutting
     // Both small white and small blue dots use snake mechanics
     const isSmallDot = !dot.isLarge; // Small dots (white or blue)
-
-    // DISPERSION PHASE: Initial explosion before snake game starts
-    const inDispersion = timeSinceP5 < BLUE_DISPERSION_TIME;
 
     if (isSmallDot && inDispersion) {
       // During dispersion: all small dots use fast Brownian motion to spread out
@@ -1121,13 +1143,8 @@ function updatePhase5(t) {
       dot.vy = 0;
     }
 
-    // LARGE WHITE DOTS: Normal Brownian motion (only large dots use free movement)
-    if (dot.isLarge) {
-      // Add random force (Brownian motion) - scaled by personality, faster speed
-      const speedMult = dot.speedMultiplier || 1.0;
-      dot.vx += (random() - 0.5) * LARGE_DOT_SPEED * speedMult;
-      dot.vy += (random() - 0.5) * LARGE_DOT_SPEED * speedMult;
-
+    // LARGE WHITE DOTS: Apply velocity and update position (for non-dispersion phases)
+    if (dot.isLarge && !inDispersion) {
       // Apply damping
       dot.vx *= FLOAT_DAMPING;
       dot.vy *= FLOAT_DAMPING;
