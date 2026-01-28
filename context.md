@@ -100,13 +100,15 @@ Initial explosion scatters all dots across the canvas
 - Creates dramatic explosive "scatter bomb" effect
 
 ### Phase 6: The Transformation (94.0s - 94.5s)
-Small dots undergo color transformation (after dispersion completes)
+Small dots undergo visual transformation (after dispersion completes)
 
-- **Blue transformation**: 70% of small dots transform white → blue (0.5s)
-- Happens AFTER dispersion so dots scatter first, then change color
-- **Size change**: Blue dots shrink to 25% of small white size
-- **Large bubbles** (2026): Always stay white
-- **Small bubbles** (other text): 30% stay white, 70% turn blue
+- **Blue dots (70%)**: White fill transitions to blue, outline collapses inward as dot shrinks to 25% size
+  - Visual effect: The blue outline becomes the new solid blue fill
+- **White dots (30%)**: White fill remains, blue outline fades away completely
+  - Visual effect: Outline simply disappears, leaving pure white dot
+- Happens AFTER dispersion so dots scatter first, then transform
+- Transformation is rapid (0.5s) with individual delays for organic effect
+- **Large bubbles** (2026): Don't transform, keep white fill with blue outline
 
 ### Phase 7: The Float (94.0s onwards)
 Large dots drift with Brownian motion and attraction points
@@ -131,12 +133,12 @@ Background text emerges from grey space
 - Creates layered depth effect with fragmented, scattered text
 
 ### Phase 9: The Fade (103.0s - 118.0s)
-Stroke outlines gradually disappear from small dots
+Stroke management for remaining elements
 
-- **Small dots**: Blue outlines fade over 15 seconds
-- **Large white dots**: Keep their blue outlines permanently
-- **Final state**: Small dots are pure (no strokes), large dots retain strokes
-- Creates visual separation between large and small elements
+- **Small dots**: Already lost their strokes during Phase 6 transformation
+- **Large white dots**: Maintain their blue outlines permanently (never fade)
+- This phase ensures stroke state remains consistent throughout the ecosystem
+- Final visual: Small dots are pure (no strokes), large dots retain strokes
 
 ### Phase 10: The Snake Game (94.0s onwards)
 Small dots follow grid-based movement with eating and cutting mechanics (overlaps with Phase 7)

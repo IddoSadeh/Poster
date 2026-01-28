@@ -1306,20 +1306,20 @@ function updatePhase6(t) {
   const timeSinceP6 = t - p6;
   const allDots = [...tangentDots, ...Object.values(fillDots).flat()];
 
-  // Smooth color transformation: white → blue for small dots
+  // Smooth transformation: outline collapses or disappears for small dots
   allDots.forEach(dot => {
-    if (dot.fate === 'residue' && !dot.isLarge) {
-      // Small dots transforming to blue
+    if (!dot.isLarge) {
+      // All small dots (both white and blue) undergo transformation
       if (timeSinceP6 < TIMELINE.blueTransformDuration) {
         // Smooth transition with individual delays
         const progress = timeSinceP6 / TIMELINE.blueTransformDuration;
         const dotProgress = Math.max(0, (progress - dot.transformDelay * 0.7) / 0.3);
         dot.transformProgress = easeInOutCubic(Math.min(1, dotProgress));
       } else {
-        dot.transformProgress = 1;  // Fully blue
+        dot.transformProgress = 1;  // Transformation complete
       }
     } else {
-      // Large dots and small white dots stay white
+      // Large dots don't transform
       dot.transformProgress = 0;
     }
   });
@@ -1797,9 +1797,9 @@ function drawDots(dots, globalScale = 1, maxScale = 1, showStroke = true, is2026
 
     let fillColor, strokeColor, useStroke, strokeAlpha, dotOpacity;
 
-    // Smooth color transition: white → blue
+    // Smooth transformation: outline collapses or disappears
     if (fate === 'residue' && transformProgress > 0) {
-      // Interpolate from white to blue
+      // Blue dots: Fill transitions white → blue, outline collapses (fades out)
       const whiteFill = DOT_STYLE.fill;
       const blueFill = DOT_STYLE.stroke;
 
@@ -1810,7 +1810,9 @@ function drawDots(dots, globalScale = 1, maxScale = 1, showStroke = true, is2026
       fillColor = [r, g, b];
       strokeColor = DOT_STYLE.stroke;
       useStroke = showStroke;
-      strokeAlpha = dot.strokeOpacity !== undefined ? dot.strokeOpacity : 1;
+      // Stroke fades out during transformation (outline collapses into fill)
+      const transformStrokeAlpha = 1 - transformProgress;
+      strokeAlpha = dot.strokeOpacity !== undefined ? dot.strokeOpacity * transformStrokeAlpha : transformStrokeAlpha;
       dotOpacity = dot.opacity;
 
       // Smooth size transition (shrink as they turn blue)
@@ -1818,8 +1820,18 @@ function drawDots(dots, globalScale = 1, maxScale = 1, showStroke = true, is2026
       const targetScale = 1 + (scale - 1) * shrinkFactor;
       scale = scale + (targetScale - scale) * transformProgress;
 
+    } else if (fate === 'foam' && transformProgress > 0) {
+      // White dots: Fill stays white, outline fades out
+      fillColor = DOT_STYLE.fill;
+      strokeColor = DOT_STYLE.stroke;
+      useStroke = showStroke;
+      // Stroke fades out during transformation
+      const transformStrokeAlpha = 1 - transformProgress;
+      strokeAlpha = dot.strokeOpacity !== undefined ? dot.strokeOpacity * transformStrokeAlpha : transformStrokeAlpha;
+      dotOpacity = dot.opacity;
+      // Size stays the same for white dots
     } else {
-      // White bubbles (stay white)
+      // Before transformation starts
       fillColor = DOT_STYLE.fill;
       strokeColor = DOT_STYLE.stroke;
       useStroke = showStroke;
