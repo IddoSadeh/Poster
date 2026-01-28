@@ -43,7 +43,8 @@ function exportSettings() {
       dotsGrow: getParam('dots-grow', 18.0),
       blueTransformDuration: getParam('blue-transform-duration', 0.5),
       textEmergeDuration: getParam('text-emerge-duration', 8.0),
-      strokeFadeDuration: getParam('stroke-fade-duration', 15.0)
+      strokeFadeDuration: getParam('stroke-fade-duration', 15.0),
+      largeDotStrokeFadeDuration: getParam('large-dot-stroke-fade', 20.0)
     },
 
     phase1: {
@@ -224,7 +225,8 @@ let TIMELINE = {
   // Ongoing: Small dots follow grid-based Markov walk with eating/cutting
 
   // Phase 11: The Ecosystem - Final stable state
-  phase11Start: 118.0           // Ecosystem fully stabilized
+  phase11Start: 118.0,          // Ecosystem fully stabilized
+  largeDotStrokeFadeDuration: 20.0  // Large dots gradually lose strokes
 };
 
 // Recalculate phase start times based on current timeline
@@ -1590,8 +1592,23 @@ function updatePhase11(t) {
 
   if (t < p11) return;
 
-  // Final stable state - all systems running in harmony
-  // No additional updates needed, just let everything stabilize
+  const timeSinceP11 = t - p11;
+  const allDots = [...tangentDots, ...Object.values(fillDots).flat()];
+
+  // Update large dot stroke fade duration from controls
+  TIMELINE.largeDotStrokeFadeDuration = getParam('large-dot-stroke-fade', 20.0);
+
+  // Large dots gradually lose their blue strokes in the final scene
+  allDots.forEach(dot => {
+    if (dot.isLarge) {
+      if (timeSinceP11 < TIMELINE.largeDotStrokeFadeDuration) {
+        const progress = timeSinceP11 / TIMELINE.largeDotStrokeFadeDuration;
+        dot.strokeOpacity = 1 - easeOutCubic(progress);
+      } else {
+        dot.strokeOpacity = 0;
+      }
+    }
+  });
 }
 
 // ===== RENDER =====

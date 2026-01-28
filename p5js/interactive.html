@@ -799,8 +799,14 @@
       <div class="phase-content">
         <div class="info" style="padding: 10px 0; text-align: center;">
           Final stable state - all systems running in harmony.
-          <br><br>
-          No additional controls for this phase.
+          <br>
+          Large dots gradually lose their blue strokes.
+        </div>
+
+        <div class="control-group">
+          <label for="large-dot-stroke-fade">Large Dot Stroke Fade Duration (s): <span id="large-dot-stroke-fade-value">20.0</span></label>
+          <input type="range" id="large-dot-stroke-fade" min="5" max="60" step="1" value="20"
+                 oninput="document.getElementById('large-dot-stroke-fade-value').textContent = this.value + '.0'">
         </div>
 
         <div class="control-group">

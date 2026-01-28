@@ -133,12 +133,11 @@ Background text emerges from grey space
 - Creates layered depth effect with fragmented, scattered text
 
 ### Phase 9: The Fade (103.0s - 118.0s)
-Stroke management for remaining elements
+Stroke management for small dots
 
 - **Small dots**: Already lost their strokes during Phase 6 transformation
-- **Large white dots**: Maintain their blue outlines permanently (never fade)
-- This phase ensures stroke state remains consistent throughout the ecosystem
-- Final visual: Small dots are pure (no strokes), large dots retain strokes
+- **Large white dots**: Keep their blue outlines through this phase (fade in Phase 11)
+- This phase ensures small dots are stroke-free before the final ecosystem
 
 ### Phase 10: The Snake Game (94.0s onwards)
 Small dots follow grid-based movement with eating and cutting mechanics (overlaps with Phase 7)
@@ -156,17 +155,18 @@ Small dots follow grid-based movement with eating and cutting mechanics (overlap
 - White and blue snakes can eat each other
 
 ### Phase 11: The Ecosystem (118.0s onwards)
-Final stable state - all systems running in harmony
+Final stable state - all systems running in harmony with gradual visual refinement
 
 - All behaviors continue indefinitely
-- **Large dots**: Float with attraction points and Brownian motion
-- **Small dots**: Continue snake game mechanics
+- **Large dots**: Float with attraction points and Brownian motion, blue strokes gradually fade over 20 seconds
+- **Small dots**: Continue snake game mechanics (strokes already gone)
 - **Text**: Drifts in background layer
 - System reaches equilibrium with all elements coexisting
+- **Final visual**: Pure white large bubbles with no strokes, creating clean minimal aesthetic
 
 ## Three Distinct Bubble Sizes
 
-1. **Large white bubbles** (from 2026): Always stay white with blue outlines, maintain size and strokes permanently
+1. **Large white bubbles** (from 2026): Always stay white and large, blue outlines gradually fade in Phase 11 (118s-138s)
 2. **Small white bubbles** (30% of other text): White fill remains, blue outline fades away in Phase 6
 3. **Tiny blue dots** (70% of other text): Blue outline collapses inward as white fill becomes blue and shrinks to 25% in Phase 6
 
@@ -229,7 +229,8 @@ const TIMELINE = {
   phase10Start: 94.0,   // Overlaps with Phase 7
 
   // Phase 11: The Ecosystem
-  phase11Start: 118.0   // Final stable state
+  phase11Start: 118.0,  // Final stable state
+  largeDotStrokeFadeDuration: 20.0  // Large dots stroke fade duration
 };
 ```
 
@@ -439,7 +440,7 @@ The interactive version includes:
 - Eating and cutting distances
 
 **Phase 11: The Ecosystem**
-- No additional controls (final stable state)
+- Large dot stroke fade duration (5-60 seconds)
 - Regenerate button for all dot properties
 
 ## Figma Integration
