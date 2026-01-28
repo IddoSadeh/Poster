@@ -94,15 +94,16 @@ Initial explosion scatters all dots across the canvas
 
 - **Poster fade**: Original graphics fade out immediately
 - **Fast Brownian explosion**: All dots (large and small) scatter with 20x speed
+- **All dots stay white with blue borders**: Color transformation happens after dispersion
 - **Duration**: 3 seconds of rapid dispersion
 - **Purpose**: Spreads dots across entire canvas before specialized behaviors begin
 - Creates dramatic explosive "scatter bomb" effect
 
-### Phase 6: The Transformation (89.0s - 89.5s)
-Small dots undergo color transformation (overlaps with Phase 5)
+### Phase 6: The Transformation (92.0s - 92.5s)
+Small dots undergo color transformation (after dispersion completes)
 
 - **Blue transformation**: 70% of small dots transform white → blue (0.5s)
-- Happens during dispersion so dots are colored while scattering
+- Happens AFTER dispersion so dots scatter first, then change color
 - **Size change**: Blue dots shrink to 25% of small white size
 - **Large bubbles** (2026): Always stay white
 - **Small bubbles** (other text): 30% stay white, 70% turn blue
@@ -208,7 +209,7 @@ const TIMELINE = {
   dispersionDuration: 3.0,  // Explosion scatter duration
 
   // Phase 6: The Transformation
-  phase6Start: 89.0,            // Overlaps with Phase 5
+  phase6Start: 92.0,            // After dispersion completes
   blueTransformDuration: 0.5,   // Color transformation duration
 
   // Phase 7: The Float

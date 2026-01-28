@@ -204,7 +204,7 @@ let TIMELINE = {
   dispersionDuration: 3.0,      // Fast Brownian explosion to scatter dots
 
   // Phase 6: The Transformation - Color shift
-  phase6Start: 89.0,            // Blue transformation (overlaps with Phase 5)
+  phase6Start: 92.0,            // Blue transformation (after dispersion completes)
   blueTransformDuration: 0.5,   // Nearly instant transformation to blue
 
   // Phase 7: The Float - Brownian motion ecosystem
@@ -237,7 +237,7 @@ function recalculatePhaseStarts() {
   TIMELINE.phase5Start = TIMELINE.phase4Start + TIMELINE.dotsGrow + TIMELINE.dotsGrowStartDelay;
 
   // Phases 6-11 start times
-  TIMELINE.phase6Start = TIMELINE.phase5Start;  // Overlaps with Phase 5
+  TIMELINE.phase6Start = TIMELINE.phase5Start + TIMELINE.dispersionDuration;  // After dispersion completes
   TIMELINE.phase7Start = TIMELINE.phase5Start + TIMELINE.dispersionDuration;
   TIMELINE.phase8Start = TIMELINE.phase7Start + 5.0;  // Text emerges 5s after float starts
   TIMELINE.phase9Start = TIMELINE.phase7Start + 9.0;  // Strokes fade 9s after float starts

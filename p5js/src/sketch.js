@@ -65,7 +65,7 @@ const TIMELINE = {
   dispersionDuration: 3.0,      // Fast Brownian explosion to scatter dots
 
   // Phase 6: The Transformation - Color shift
-  phase6Start: 89.0,            // Blue transformation (overlaps with Phase 5)
+  phase6Start: 92.0,            // Blue transformation (after dispersion completes)
   blueTransformDuration: 0.5,   // Nearly instant transformation to blue
 
   // Phase 7: The Float - Brownian motion ecosystem
