@@ -1705,8 +1705,8 @@ function renderScene(t) {
   for (const elementName of Object.keys(fillDots)) {
     if (elementName !== 'numbers2026') {
       // Small dots - draw in middle layer
-      const showStroke = posterOpacity > 0;
-      drawDots(fillDots[elementName], dotScaleOther, DOT_GROW_OTHER, showStroke, false);
+      // Always show stroke (it will fade based on strokeOpacity in Phase 9)
+      drawDots(fillDots[elementName], dotScaleOther, DOT_GROW_OTHER, true, false);
     }
   }
 
