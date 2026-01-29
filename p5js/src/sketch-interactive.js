@@ -263,12 +263,12 @@ const RECT_POSTER_MARGIN = 20; // margin from poster edges when rectangle grows 
 
 let TANGENT_THRESHOLD = 0.15;  // how "straight" an edge must be (now dynamic)
 let TANGENT_DOT_RADIUS = 3;  // Same as fill dots (now dynamic)
-let TANGENT_SPACING = 8;  // Tighter spacing for better coverage on straight segments
+let TANGENT_SPACING = 15;  // Spacing for sampling tangent dots (now dynamic)
 
 let FILL_TARGET = 0.45;  // 45% fill for 2026 (now dynamic)
 let FILL_TARGET_SMALL = 0.5;  // 50% fill for small text (now dynamic)
 let FILL_DOT_RADIUS = 3;  // (now dynamic)
-let FILL_SPACING_2026 = 6;  // Spacing for 2026 fill dots - tighter for better straight segment coverage
+let FILL_SPACING_2026 = 15;  // Spacing for 2026 fill dots (now dynamic)
 let FILL_SPACING_OTHER = 4;  // Spacing for other text fill dots (now dynamic)
 
 // Phase 4: The Bloom - Aggressive expansion contrast

@@ -341,7 +341,7 @@ function findTangentPoints(edges, threshold, radius) {
   const edgeSet = new Set(edges.map(e => `${e.x},${e.y}`));
 
   // Sample edges and check local direction
-  const spacing = 8;  // Tighter spacing for better coverage on straight segments
+  const spacing = 15;  // Moderate spacing for tangent dots
   const checked = new Set();
   
   for (const edge of edges) {
@@ -439,12 +439,12 @@ function initPhase3() {
 }
 
 function traceAllEdges() {
-  // Numbers 2026 - tighter spacing for better coverage on straight segments
+  // Numbers 2026 - moderate spacing for dense coverage
   const numbersG = createGraphics(BASE_W, BASE_H);
   numbersG.pixelDensity(1);
   numbersG.clear();
   numbersG.image(numbersImg, 0, 0, BASE_W, BASE_H);
-  allEdges.numbers2026 = sampleEdges(traceEdgesFromGraphics(numbersG, EDGE_THRESHOLDS.numbers2026), 6);  // Tighter spacing for straights
+  allEdges.numbers2026 = sampleEdges(traceEdgesFromGraphics(numbersG, EDGE_THRESHOLDS.numbers2026), 15);  // Moderate spacing
 
   // Small text elements - tight spacing for high density
   const timesG = renderElementToGraphics(timesImg, items.times);
