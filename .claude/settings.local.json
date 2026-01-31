@@ -9,7 +9,10 @@
       "Bash(git branch:*)",
       "Bash(git push:*)",
       "Bash(node inspect-frames.mjs:*)",
-      "Bash(node analyze-frames-10-13.mjs:*)"
+      "Bash(node analyze-frames-10-13.mjs:*)",
+      "Bash(mkdir:*)",
+      "Bash(cat:*)",
+      "Bash(git revert:*)"
     ]
   }
 }

@@ -55,15 +55,15 @@ function exportSettings() {
     phase2: {
       tangentDotRadius: getParam('tangent-radius', 3),
       tangentThreshold: getParam('tangent-threshold', 0.15),
-      tangentSpacing: getParam('tangent-spacing', 15)
+      tangentSpacing: getParam('tangent-spacing', 15)  // Must match JS default
     },
 
     phase3: {
-      fillTarget: getParam('fill-target', 0.45),
-      fillTargetSmall: getParam('fill-target-small', 0.5),
+      fillTarget: getParam('fill-target', 0.45),           // Must match JS default
+      fillTargetSmall: getParam('fill-target-small', 0.5), // Must match JS default
       fillDotRadius: getParam('fill-radius', 3),
-      fillSpacing2026: getParam('fill-spacing-2026', 15),
-      fillSpacingOther: getParam('fill-spacing-other', 4)
+      fillSpacing2026: getParam('fill-spacing-2026', 15),  // Must match JS default
+      fillSpacingOther: getParam('fill-spacing-other', 4)  // Must match JS default
     },
 
     phase4: {

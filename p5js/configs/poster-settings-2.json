@@ -22,14 +22,14 @@
   "phase2": {
     "tangentDotRadius": 3,
     "tangentThreshold": 0.15,
-    "tangentSpacing": 25
+    "tangentSpacing": 15
   },
   "phase3": {
     "fillTarget": 0.45,
-    "fillTargetSmall": 0.2,
+    "fillTargetSmall": 0.5,
     "fillDotRadius": 3,
-    "fillSpacing2026": 25,
-    "fillSpacingOther": 6
+    "fillSpacing2026": 15,
+    "fillSpacingOther": 4
   },
   "phase4": {
     "dotGrow2026": 13,

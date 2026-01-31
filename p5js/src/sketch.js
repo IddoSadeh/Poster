@@ -105,13 +105,13 @@ const RECT_POSTER_MARGIN = 20; // margin from poster edges when rectangle grows 
 
 let TANGENT_THRESHOLD = 0.15;  // how "straight" an edge must be (can be updated by config)
 let TANGENT_DOT_RADIUS = 3;  // Same as fill dots (can be updated by config)
-let TANGENT_SPACING = 25;  // Sampling spacing for tangent detection (can be updated by config)
+let TANGENT_SPACING = 15;  // Sampling spacing for tangent detection (can be updated by config)
 
 let FILL_TARGET = 0.45;  // 45% fill for 2026 (can be updated by config)
 let FILL_TARGET_SMALL = 0.5;  // 50% fill for small text (can be updated by config)
 let FILL_DOT_RADIUS = 3;  // (can be updated by config)
-let FILL_SPACING_2026 = 25;  // Sampling spacing for 2026 (can be updated by config)
-let FILL_SPACING_OTHER = 6;  // Sampling spacing for other text (can be updated by config)
+let FILL_SPACING_2026 = 15;  // Sampling spacing for 2026 (can be updated by config)
+let FILL_SPACING_OTHER = 4;  // Sampling spacing for other text (can be updated by config)
 
 // Phase 4: The Bloom - Aggressive expansion contrast
 let DOT_GROW_2026 = 13;  // 2026 dots balloon aggressively (can be updated by config)
@@ -147,7 +147,6 @@ let SPEED_VARIATION_MIN = 0.7;      // Some dots drift slower (can be updated by
 let SPEED_VARIATION_MAX = 1.3;      // Some dots drift faster (can be updated by config)
 
 // Phase 5: Dispersion explosion
-let BLUE_DISPERSION_TIME = 3.0;     // Initial explosion time (can be updated by config)
 let BLUE_DISPERSION_SPEED = 20.0;   // Speed multiplier during dispersion (can be updated by config)
 
 // Phase 10: Snake game - Grid-based Markov walk with eating/cutting
@@ -299,7 +298,7 @@ function applyConfiguration(config) {
 
   // Apply Phase 5 settings
   if (config.phase5) {
-    BLUE_DISPERSION_TIME = config.phase5.dispersionDuration ?? BLUE_DISPERSION_TIME;
+    TIMELINE.dispersionDuration = config.phase5.dispersionDuration ?? TIMELINE.dispersionDuration;
     BLUE_DISPERSION_SPEED = config.phase5.dispersionSpeed ?? BLUE_DISPERSION_SPEED;
   }
 
@@ -336,10 +335,25 @@ function applyConfiguration(config) {
     BLUE_CUTTING_DISTANCE = config.phase10.snakeCuttingDistance ?? BLUE_CUTTING_DISTANCE;
   }
 
-  // Recalculate animation duration (when does the final phase complete?)
+  // Recalculate phase start times based on durations
+  // Phase 1 ends after all its sub-phases
+  const phase1End = TIMELINE.phase1Start + TIMELINE.rectForm + TIMELINE.breathInhale +
+                    TIMELINE.breathHold + TIMELINE.breathExhale + TIMELINE.releaseGrow + TIMELINE.ghostFade;
+  TIMELINE.phase2Start = phase1End;
+  TIMELINE.phase3Start = TIMELINE.phase2Start + TIMELINE.tangentAppear;
+  TIMELINE.phase4Start = TIMELINE.phase3Start + TIMELINE.gradualFill;
+  TIMELINE.phase5Start = TIMELINE.phase4Start + TIMELINE.dotsGrowStartDelay + TIMELINE.dotsGrow;
+  TIMELINE.phase6Start = TIMELINE.phase5Start + TIMELINE.dispersionDuration;
+  TIMELINE.phase7Start = TIMELINE.phase6Start;
+  TIMELINE.phase8Start = TIMELINE.phase6Start + 5.0;
+  TIMELINE.phase9Start = TIMELINE.phase6Start + 9.0;
+  TIMELINE.phase10Start = TIMELINE.phase6Start;
+  TIMELINE.phase11Start = TIMELINE.phase9Start + TIMELINE.strokeFadeDuration;
+
+  // Recalculate animation duration
   animationDuration = TIMELINE.phase11Start + TIMELINE.largeDotStrokeFadeDuration;
 
-  console.log(`📊 Animation duration: ${animationDuration}s`);
+  console.log(`📊 Animation duration: ${animationDuration.toFixed(1)}s (phases recalculated)`);
 }
 
 // Reset the animation to start from the beginning
@@ -360,6 +374,23 @@ function resetAnimation() {
     bottomLeft: []
   };
   floatingWords = [];
+
+  // Reset Phase 1 visual state
+  rectOpacity = 0;
+  rectScaleX = 1;
+  rectScaleY = 1;
+  textScale = 1;
+  cornerDots = [];
+  cornerHandles = [];
+  cornerDotsOpacity = 1;
+  cornerHandlesOpacity = 1;
+
+  // Reset Phase 4 visual state
+  dotScale2026 = 1;
+  dotScaleOther = 1;
+
+  // Reset Phase 5+ visual state
+  posterOpacity = 1;
 
   // Re-initialize all phases
   if (systemReady) {
@@ -391,16 +422,22 @@ function preload() {
   rectangleLinesSVG = loadImage("assets/svg/rectangle-lines.svg");
   textData = loadJSON("assets/data/text-data.json");  // Load exact text positions from Figma
 
-  // Load all configuration files
+  // Load all configuration files with proper error handling
   console.log(`📂 Loading ${CONFIG_FILES.length} configuration file(s)...`);
   for (let i = 0; i < CONFIG_FILES.length; i++) {
-    try {
-      configurations[i] = loadJSON(CONFIG_FILES[i]);
-      console.log(`✅ Loaded config ${i + 1}: ${CONFIG_FILES[i]}`);
-    } catch (error) {
-      console.warn(`⚠️ Failed to load ${CONFIG_FILES[i]}, using defaults`);
-      configurations[i] = null;
-    }
+    const configIndex = i;  // Capture index for callback
+    configurations[i] = loadJSON(
+      CONFIG_FILES[i],
+      // Success callback
+      (data) => {
+        console.log(`✅ Loaded config ${configIndex + 1}: ${CONFIG_FILES[configIndex]}`);
+      },
+      // Error callback
+      (error) => {
+        console.warn(`⚠️ Failed to load ${CONFIG_FILES[configIndex]}, using defaults`);
+        configurations[configIndex] = null;
+      }
+    );
   }
 }
 
@@ -421,9 +458,14 @@ function setup() {
   renderPosterTo(posterLayer);
 
   // Apply first configuration (if available)
-  if (configurations.length > 0 && configurations[0]) {
-    applyConfiguration(configurations[0]);
+  // Check that config is a valid object with expected properties
+  const firstConfig = configurations[0];
+  if (firstConfig && typeof firstConfig === 'object' && firstConfig.version) {
+    console.log('📋 Config structure valid, applying...');
+    applyConfiguration(firstConfig);
   } else {
+    console.warn('⚠️ No valid configuration found, using defaults');
+    console.log('   Config value:', firstConfig);
     // Calculate default duration
     animationDuration = TIMELINE.phase11Start + TIMELINE.largeDotStrokeFadeDuration;
   }
