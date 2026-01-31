@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configuration Debugger</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      background: #1a1a1a;
+      color: #e0e0e0;
+      font-family: 'IBM Plex Mono', monospace;
+      padding: 40px;
+      font-size: 12px;
+    }
+    h1 {
+      color: #0095ff;
+      margin-bottom: 30px;
+      font-size: 24px;
+    }
+    .config-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 30px;
+      margin-bottom: 40px;
+    }
+    .config-box {
+      background: #2a2a2a;
+      border: 2px solid #444;
+      border-radius: 8px;
+      padding: 20px;
+    }
+    .config-box h2 {
+      color: #0095ff;
+      margin-bottom: 15px;
+      font-size: 16px;
+    }
+    .config-box h3 {
+      color: #00d4ff;
+      margin-top: 15px;
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+    .param {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+      border-bottom: 1px solid #333;
+    }
+    .param-name {
+      color: #aaa;
+    }
+    .param-value {
+      color: #0095ff;
+      font-weight: 500;
+    }
+    .comparison {
+      background: #2a2a2a;
+      border: 2px solid #00d4ff;
+      border-radius: 8px;
+      padding: 20px;
+    }
+    .comparison h2 {
+      color: #00d4ff;
+      margin-bottom: 15px;
+      font-size: 16px;
+    }
+    .diff-row {
+      display: flex;
+      gap: 20px;
+      padding: 6px 0;
+      border-bottom: 1px solid #333;
+    }
+    .diff-param {
+      flex: 1;
+      color: #aaa;
+    }
+    .diff-value {
+      flex: 0 0 100px;
+      text-align: right;
+      font-weight: 500;
+    }
+    .different {
+      color: #ff9500;
+      font-weight: 700;
+    }
+    .loading {
+      text-align: center;
+      color: #888;
+      padding: 40px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Configuration Debugger</h1>
+  <div id="loading" class="loading">Loading configurations...</div>
+  <div id="config-container" class="config-container" style="display: none;"></div>
+  <div id="comparison" class="comparison" style="display: none;"></div>
+
+  <script>
+    const CONFIG_FILES = [
+      'configs/poster-settings-1.json',
+      'configs/poster-settings-2.json',
+      'configs/poster-settings-3.json'
+    ];
+
+    let configs = [];
+
+    async function loadConfigs() {
+      for (let i = 0; i < CONFIG_FILES.length; i++) {
+        try {
+          const response = await fetch(CONFIG_FILES[i]);
+          const data = await response.json();
+          configs.push({ file: CONFIG_FILES[i], data: data });
+        } catch (error) {
+          console.error(`Failed to load ${CONFIG_FILES[i]}:`, error);
+        }
+      }
+
+      if (configs.length > 0) {
+        displayConfigs();
+        displayComparison();
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('config-container').style.display = 'grid';
+        document.getElementById('comparison').style.display = 'block';
+      }
+    }
+
+    function displayConfigs() {
+      const container = document.getElementById('config-container');
+
+      configs.forEach((config, index) => {
+        const box = document.createElement('div');
+        box.className = 'config-box';
+
+        let html = `
+          <h2>Config ${index + 1}: ${config.file.split('/').pop()}</h2>
+          <div class="param">
+            <span class="param-name">Exported:</span>
+            <span class="param-value">${new Date(config.data.exportedAt).toLocaleString()}</span>
+          </div>
+        `;
+
+        // Key parameters to display
+        const keyParams = {
+          'Phase 3 - Density': {
+            'fillTarget (2026)': config.data.phase3.fillTarget,
+            'fillTargetSmall': config.data.phase3.fillTargetSmall,
+            'fillSpacing2026': config.data.phase3.fillSpacing2026,
+            'fillSpacingOther': config.data.phase3.fillSpacingOther
+          },
+          'Phase 4 - Growth': {
+            'dotGrow2026': config.data.phase4.dotGrow2026,
+            'dotGrowOther': config.data.phase4.dotGrowOther
+          },
+          'Phase 5 - Dispersion': {
+            'dispersionDuration': config.data.phase5.dispersionDuration,
+            'dispersionSpeed': config.data.phase5.dispersionSpeed
+          },
+          'Phase 6 - Transform': {
+            'blueDotPercentage': `${Math.round(config.data.phase6.blueDotPercentage * 100)}%`
+          },
+          'Phase 7 - Movement': {
+            'baseSpeed': config.data.phase7.baseSpeed,
+            'largeDotSpeed': config.data.phase7.largeDotSpeed,
+            'attractionStrength': config.data.phase7.attractionStrength,
+            'gustStrength': config.data.phase7.gustStrength,
+            'gustFrequency': `${Math.round(config.data.phase7.gustFrequency * 100)}%`
+          },
+          'Phase 10 - Snake': {
+            'snakeGridSize': config.data.phase10.snakeGridSize,
+            'snakeStepInterval': config.data.phase10.snakeStepInterval
+          }
+        };
+
+        for (const [section, params] of Object.entries(keyParams)) {
+          html += `<h3>${section}</h3>`;
+          for (const [key, value] of Object.entries(params)) {
+            html += `
+              <div class="param">
+                <span class="param-name">${key}:</span>
+                <span class="param-value">${value}</span>
+              </div>
+            `;
+          }
+        }
+
+        box.innerHTML = html;
+        container.appendChild(box);
+      });
+    }
+
+    function displayComparison() {
+      if (configs.length < 2) return;
+
+      const container = document.getElementById('comparison');
+      let html = '<h2>Differences Between Configurations</h2>';
+
+      const params = [
+        ['phase3.fillTarget', 'Fill Target (2026)'],
+        ['phase3.fillTargetSmall', 'Fill Target (Small)'],
+        ['phase5.dispersionSpeed', 'Dispersion Speed'],
+        ['phase6.blueDotPercentage', 'Blue Dot %'],
+        ['phase7.baseSpeed', 'Base Speed'],
+        ['phase7.largeDotSpeed', 'Large Dot Speed'],
+        ['phase7.attractionStrength', 'Attraction Strength'],
+        ['phase10.snakeStepInterval', 'Snake Step Interval']
+      ];
+
+      params.forEach(([path, label]) => {
+        const values = configs.map(c => {
+          const keys = path.split('.');
+          let value = c.data;
+          for (const key of keys) {
+            value = value[key];
+          }
+          return value;
+        });
+
+        const allSame = values.every(v => v === values[0]);
+        const className = allSame ? '' : 'different';
+
+        html += `<div class="diff-row">`;
+        html += `<div class="diff-param">${label}:</div>`;
+        values.forEach(v => {
+          html += `<div class="diff-value ${className}">${v}</div>`;
+        });
+        html += `</div>`;
+      });
+
+      container.innerHTML = html;
+    }
+
+    loadConfigs();
+  </script>
+</body>
+</html>

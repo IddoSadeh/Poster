@@ -250,7 +250,9 @@ function applyConfiguration(config) {
     return;
   }
 
+  console.log('═══════════════════════════════════════════════');
   console.log('🔄 Applying configuration:', config.exportedAt || 'Default');
+  console.log('═══════════════════════════════════════════════');
 
   // Apply timeline settings
   if (config.timeline) {
@@ -339,7 +341,17 @@ function applyConfiguration(config) {
   // Recalculate animation duration (when does the final phase complete?)
   animationDuration = TIMELINE.phase11Start + TIMELINE.largeDotStrokeFadeDuration;
 
-  console.log(`📊 Animation duration: ${animationDuration}s`);
+  // Log key parameters for verification
+  console.log('📊 Key Parameters Applied:');
+  console.log(`   Phase 3: fillTarget=${FILL_TARGET}, fillTargetSmall=${FILL_TARGET_SMALL}`);
+  console.log(`   Phase 3: fillSpacing2026=${FILL_SPACING_2026}, fillSpacingOther=${FILL_SPACING_OTHER}`);
+  console.log(`   Phase 4: dotGrow2026=${DOT_GROW_2026}, dotGrowOther=${DOT_GROW_OTHER}`);
+  console.log(`   Phase 5: dispersionDuration=${BLUE_DISPERSION_TIME}, dispersionSpeed=${BLUE_DISPERSION_SPEED}`);
+  console.log(`   Phase 6: blueDotPercentage=${BLUE_DOT_PERCENTAGE}`);
+  console.log(`   Phase 7: baseSpeed=${BASE_SPEED}, largeDotSpeed=${LARGE_DOT_SPEED}`);
+  console.log(`   Phase 10: snakeStepInterval=${BLUE_STEP_INTERVAL}, snakeGridSize=${BLUE_GRID_SIZE}`);
+  console.log(`   Animation duration: ${animationDuration}s`);
+  console.log('═══════════════════════════════════════════════');
 }
 
 // Reset the animation to start from the beginning
@@ -375,7 +387,10 @@ function resetAnimation() {
 // Switch to the next configuration and restart
 function switchToNextConfig() {
   currentConfigIndex = (currentConfigIndex + 1) % configurations.length;
-  console.log(`🔀 Switching to config ${currentConfigIndex + 1}/${configurations.length}`);
+  console.log('\n\n');
+  console.log('🔀🔀🔀 SWITCHING TO NEXT CONFIGURATION 🔀🔀🔀');
+  console.log(`   Config ${currentConfigIndex + 1} of ${configurations.length}`);
+  console.log(`   File: ${CONFIG_FILES[currentConfigIndex]}`);
 
   applyConfiguration(configurations[currentConfigIndex]);
   resetAnimation();
@@ -392,16 +407,23 @@ function preload() {
   textData = loadJSON("assets/data/text-data.json");  // Load exact text positions from Figma
 
   // Load all configuration files
+  console.log('═══════════════════════════════════════════════');
   console.log(`📂 Loading ${CONFIG_FILES.length} configuration file(s)...`);
   for (let i = 0; i < CONFIG_FILES.length; i++) {
-    try {
-      configurations[i] = loadJSON(CONFIG_FILES[i]);
-      console.log(`✅ Loaded config ${i + 1}: ${CONFIG_FILES[i]}`);
-    } catch (error) {
-      console.warn(`⚠️ Failed to load ${CONFIG_FILES[i]}, using defaults`);
-      configurations[i] = null;
-    }
+    configurations[i] = loadJSON(CONFIG_FILES[i],
+      // Success callback
+      (data) => {
+        console.log(`✅ Loaded config ${i + 1}: ${CONFIG_FILES[i]}`);
+        console.log(`   Exported at: ${data.exportedAt}`);
+        console.log(`   Version: ${data.version}`);
+      },
+      // Error callback
+      (error) => {
+        console.error(`❌ Failed to load ${CONFIG_FILES[i]}:`, error);
+      }
+    );
   }
+  console.log('═══════════════════════════════════════════════');
 }
 
 function setup() {
@@ -499,19 +521,20 @@ function initPhase1() {
 // ===== PHASE 2: TANGENT DOTS INITIALIZATION =====
 
 function initPhase2() {
-  console.log("Initializing Phase 2: Tangent dots on 2026");
-  
+  console.log("🔵 Initializing Phase 2: Tangent dots on 2026");
+  console.log(`   Using: TANGENT_THRESHOLD=${TANGENT_THRESHOLD}, TANGENT_SPACING=${TANGENT_SPACING}, TANGENT_DOT_RADIUS=${TANGENT_DOT_RADIUS}`);
+
   // Get edges of 2026
   const numbersG = createGraphics(BASE_W, BASE_H);
   numbersG.pixelDensity(1);
   numbersG.clear();
   numbersG.image(numbersImg, 0, 0, BASE_W, BASE_H);
-  
+
   const edges = traceEdgesFromGraphics(numbersG, EDGE_THRESHOLDS.numbers2026);
-  
+
   // Find tangent points (where edge direction is mostly horizontal or vertical)
   tangentDots = findTangentPoints(edges, TANGENT_THRESHOLD, TANGENT_DOT_RADIUS);
-  console.log(`  Tangent dots: ${tangentDots.length}`);
+  console.log(`   ✅ Generated ${tangentDots.length} tangent dots`);
 }
 
 function findTangentPoints(edges, threshold, radius) {
@@ -582,7 +605,9 @@ function findTangentPoints(edges, threshold, radius) {
 // ===== PHASE 3: GRADUAL FILL INITIALIZATION =====
 
 function initPhase3() {
-  console.log("Initializing Phase 3: Gradual fill");
+  console.log("🔵 Initializing Phase 3: Gradual fill");
+  console.log(`   Using: FILL_TARGET=${FILL_TARGET}, FILL_TARGET_SMALL=${FILL_TARGET_SMALL}`);
+  console.log(`   Using: FILL_SPACING_2026=${FILL_SPACING_2026}, FILL_SPACING_OTHER=${FILL_SPACING_OTHER}, FILL_DOT_RADIUS=${FILL_DOT_RADIUS}`);
 
   // Trace all edges
   traceAllEdges();
@@ -614,8 +639,12 @@ function initPhase3() {
       });
     });
 
-    console.log(`  ${elementName}: ${fillDots[elementName].length} fill dots (${Math.round(fillTarget * 100)}% of ${edges.length})`);
+    console.log(`   ${elementName}: ${fillDots[elementName].length} fill dots (${Math.round(fillTarget * 100)}% of ${edges.length} edges)`);
   }
+
+  // Summary
+  const totalFillDots = Object.values(fillDots).reduce((sum, arr) => sum + arr.length, 0);
+  console.log(`   ✅ Total fill dots generated: ${totalFillDots}`);
 }
 
 function traceAllEdges() {
@@ -664,7 +693,8 @@ function sampleEdges(edges, spacing) {
 // ===== PHASES 5-11: DISPERSION, TRANSFORMATION, FLOAT, TEXT, FADE, SNAKE, ECOSYSTEM =====
 
 function initPhases5to11() {
-  console.log("Initializing Phases 5-11: Dispersion → Transformation → Float → Resurfacing → Fade → Snake → Ecosystem");
+  console.log("🔵 Initializing Phases 5-11: Dispersion → Transformation → Float → Resurfacing → Fade → Snake → Ecosystem");
+  console.log(`   Using: BLUE_DOT_PERCENTAGE=${BLUE_DOT_PERCENTAGE} (${Math.round(BLUE_DOT_PERCENTAGE * 100)}% of small dots will turn blue)`);
 
   // Assign dots their layer roles and personalities
   // Large bubbles (2026) ALWAYS stay white - never transform to blue
@@ -717,11 +747,18 @@ function initPhases5to11() {
   // Background: Floating words (data layer)
   initFloatingWords();
 
-  console.log(`  Fate assignment complete:`);
-  console.log(`    - Phase 5-7: Large white bubbles (2026) -> Dispersion + Brownian motion`);
-  console.log(`    - Phase 6: Small dots -> 70% transform to blue`);
-  console.log(`    - Phase 10: Small dots -> Grid-based snake game (white + blue)`);
-  console.log(`    - Phase 8: Background text -> ${floatingWords.length} words`);
+  // Count fates for verification
+  const allDots = [...tangentDots, ...Object.values(fillDots).flat()];
+  const largeDots = allDots.filter(d => d.isLarge).length;
+  const smallBlueDots = allDots.filter(d => !d.isLarge && d.fate === 'residue').length;
+  const smallWhiteDots = allDots.filter(d => !d.isLarge && d.fate === 'foam').length;
+
+  console.log(`   ✅ Fate assignment complete:`);
+  console.log(`      Large white bubbles (2026): ${largeDots} dots`);
+  console.log(`      Small blue dots (will shrink): ${smallBlueDots} dots (${Math.round((smallBlueDots / (smallBlueDots + smallWhiteDots)) * 100)}%)`);
+  console.log(`      Small white dots (keep size): ${smallWhiteDots} dots (${Math.round((smallWhiteDots / (smallBlueDots + smallWhiteDots)) * 100)}%)`);
+  console.log(`      Background text: ${floatingWords.length} words`);
+  console.log(`      Total dots: ${allDots.length}`);
 }
 
 // Assign random speed variation to each dot (organic individual differences)
